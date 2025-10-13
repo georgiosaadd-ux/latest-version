@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font optimization */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-display: swap;
+    scroll-behavior: smooth;
+  }
+  
+  .font-heading {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    font-display: swap;
+  }
+  
+  /* Smooth transitions for sections */
+  section {
+    transition: all 0.3s ease-out;
+  }
+  
+  /* Prevent layout shift during scroll */
+  * {
+    scroll-margin-top: 80px;
+  }
+  
+  /* Screen reader only class */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
