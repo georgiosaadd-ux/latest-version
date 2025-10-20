@@ -25,6 +25,14 @@ const PainStrip: React.FC<PainStripProps> = ({ onCategoryClick = () => {} }) => 
     {
       story: "Every man looks different, but the stories feel the same. The same games, the same red flags, the same heartbreak… and you're starting to wonder if it's you.",
       highlight: "Break the cycle once and for all"
+    },
+    {
+      story: "You say yes when you mean no, give until you're empty, and wonder why you feel invisible. Your kindness has become your cage, and you're tired of breaking yourself for others.",
+      highlight: "Learn the power of saying no and protecting your peace"
+    },
+    {
+      story: "You scroll through her perfect life and feel like you're failing at yours. The comparison never ends, and neither does the feeling that you're just not enough.",
+      highlight: "Stop comparing and start celebrating your unique journey"
     }
   ];
 

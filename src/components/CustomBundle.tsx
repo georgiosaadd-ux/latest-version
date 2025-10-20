@@ -215,7 +215,7 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
             Your Story, Your Choice
           </p>
           <p className="text-xl text-gray-600 mb-2">
-            Pick any 3 or more eBooks and you'll always get one free.
+            Pick any 3 or more eBooks from all categories and you'll always get one free.
           </p>
           <p className="text-lg text-gray-500">
             Every 3 you pick unlocks 1 free — Mix & match as you like!

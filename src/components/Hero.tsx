@@ -40,9 +40,10 @@ const Hero: React.FC<HeroProps> = ({ onBrowseClick, onBundlesClick }) => {
               </span>
               <br />
               <span className="text-gray-800">Tactics</span>
+                
             </span>
           </h1>
-          
+          <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent font-headi text-1x1 md:text-1x1 lg:text-9xl font-bold mb-6 leading-tight">& Empower Yourself </span> <br /><br />
           <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-2xl mx-auto leading-relaxed">
             From love-bombing to manipulation, from charm to control. See the hidden patterns men play, and finally protect your heart.
           </p>

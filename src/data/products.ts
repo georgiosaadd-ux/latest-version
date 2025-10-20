@@ -6,7 +6,12 @@ import whyAttractToxicImage from '../assets/images/Why-Do-I-Attract-Toxic-Men.pn
 import mrAlmostImage from '../assets/images/Mr-Almost.png';
 import loveVsLustImage from '../assets/images/Love-vs-Lust.png';
 import charmerTrapImage from '../assets/images/The-Charmer-Trap.png';
-import datingAgeManipulatorsImage from '../assets/images/Dating-in-the-Age-of-Manipulators.png';
+
+// Placeholder images for Self Empowering category - replace with actual covers
+const silentGirlSyndromeImage = 'https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=400';
+const girlNeverFeltEnoughImage = 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400';
+const tooKindToSurviveImage = 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400';
+const comparisonTrapImage = 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400';
 
 import { EBook, Bundle } from '../types';
 
@@ -164,9 +169,90 @@ export const ebooks: EBook[] = [
     ],
     cover: charmerTrapImage,
     pages: 76,
-    audioMinutes: 20
+    },
+  
+  // Self Empowering
+    {
+      id: 'silent-girl-syndrome',
+      title: 'Silent Girl Syndrome',
+      subtitle: 'From Shaking Voice to Owning Every Room',
+      category: 'Self Empowering',
+      price: 38,
+        comingSoon: true,  // ADD THIS LINE
+      description: 'I Couldn\'t Speak Without Shaking, Now I Own Every Room',
+      badges: [],
+      takeaways: [
+        'Overcome the fear of speaking up in any situation',
+        'Build unshakeable confidence from the inside out',
+        'Transform anxiety into authentic presence',
+        'Master the art of commanding respect without aggression',
+        'Find your voice and use it powerfully'
+      ],
+      cover: silentGirlSyndromeImage,
+      pages: 82,
+      audioMinutes: 21
+    },
+    {
+      id: 'girl-never-felt-enough',
+      title: 'The Girl Who Never Felt Enough',
+      subtitle: 'Stop Seeking Validation, Start Being Whole',
+      category: 'Self Empowering',
+      price: 36,
+        comingSoon: true,  // ADD THIS LINE
+      description: 'I Looked for Validation in Everyone',
+      badges: [],
+      takeaways: [
+        'Break free from the endless need for approval',
+        'Discover your inherent worth beyond others\' opinions',
+        'Stop people-pleasing and start self-honoring',
+        'Build internal validation that never wavers',
+        'Become whole without needing external confirmation'
+      ],
+      cover: girlNeverFeltEnoughImage,
+      pages: 74,
+      audioMinutes: 19
+    },
+    {
+      id: 'too-kind-to-survive',
+      title: 'Too Kind to Survive',
+      subtitle: 'The Power of No and Protecting Your Peace',
+      category: 'Self Empowering',
+      price: 40,
+        comingSoon: true,  // ADD THIS LINE
+      description: 'I Broke Myself to Please Others, Until I Learned the Power of No',
+      badges: [],
+      takeaways: [
+        'Learn to say no without guilt or explanation',
+        'Set boundaries that protect your energy and time',
+        'Stop sacrificing yourself for others\' comfort',
+        'Understand the difference between kindness and self-destruction',
+        'Reclaim your power through healthy boundaries'
+      ],
+      cover: tooKindToSurviveImage,
+      pages: 88,
+      audioMinutes: 23
+    },
+    {
+      id: 'comparison-trap',
+      title: 'The Girl Who Changed Her Bloodline',
+      subtitle: 'See Your Own Light, Stop Dimming It',
+      category: 'Self Empowering',
+      price: 34,
+        comingSoon: true,  // ADD THIS LINE
+      description: 'Jealous of Her, Blind to Me',
+      badges: [],
+      takeaways: [
+        'Break free from the comparison cycle that steals your joy',
+        'Recognize your unique strengths and gifts',
+        'Stop measuring your worth against others\' highlight reels',
+        'Transform jealousy into inspiration and growth',
+        'Celebrate your journey without needing to compete'
+      ],
+      cover: comparisonTrapImage,
+      pages: 66,
+      audioMinutes: 17
   }
-];
+].flat();
 
 export const bundles: Bundle[] = [
   {
@@ -188,6 +274,16 @@ export const bundles: Bundle[] = [
     savings: 36, // cheapest book price
     ebookIds: ['dating-age-manipulators', 'mr-almost', 'charmer-trap'],
     ebooks: []
+  },
+  {
+    id: 'self-empowering',
+    title: 'Self Empowering Bundle',
+    description: 'Complete toolkit for building unshakeable confidence and self-worth',
+    price: 81, // 40 + 38 + 36 - 34 (cheapest)
+    originalPrice: 148, // 40 + 38 + 36 + 34
+    savings: 34, // cheapest book price
+    ebookIds: ['too-kind-to-survive', 'silent-girl-syndrome', 'girl-never-felt-enough'],
+    ebooks: []
   }
 ];
 
@@ -198,5 +294,6 @@ bundles.forEach(bundle => {
 
 export const activeCategories = [
   'Manipulation & Toxic Relationships',
-  'Dating & Red Flags'
+  'Dating & Red Flags',
+  'Self Empowering'
 ];

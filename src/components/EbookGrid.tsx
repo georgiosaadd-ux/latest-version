@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, BookOpen, Volume2, ExternalLink, ChevronRight } from 'lucide-react';
+import { ShoppingCart, BookOpen, Volume2, ExternalLink, ChevronRight, Mail } from 'lucide-react';
 import { EBook, CartItem } from '../types';
 import { activeCategories } from '../data/products';
 import PreviewModal from './PreviewModal';
@@ -15,6 +15,8 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
   const [previewEbook, setPreviewEbook] = useState<EBook | null>(null);
   const [activeTab, setActiveTab] = useState<string>('manipulation-toxic');
   const [showStickyTabs, setShowStickyTabs] = useState(false);
+  const [emailInputs, setEmailInputs] = useState<Record<string, string>>({});
+  const [submittedEmails, setSubmittedEmails] = useState<Record<string, boolean>>({});
 
   const handleAddToCart = (ebook: EBook) => {
     console.log('EbookGrid adding to cart:', ebook);
@@ -29,18 +31,46 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
     setPreviewEbook(null);
   };
 
+  const handleEmailChange = (ebookId: string, email: string) => {
+    setEmailInputs(prev => ({ ...prev, [ebookId]: email }));
+  };
+
+  const handleNotifyMe = (ebook: EBook) => {
+    const email = emailInputs[ebook.id];
+    if (!email || !email.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    // Store email (you can send this to your backend later)
+    console.log('Early access signup:', { ebookId: ebook.id, email, ebookTitle: ebook.title });
+    
+    // Mark as submitted
+    setSubmittedEmails(prev => ({ ...prev, [ebook.id]: true }));
+    
+    // Show success message
+    setTimeout(() => {
+      alert('Thank you! We\'ll notify you when this ebook launches.');
+    }, 100);
+  };
+
   const getEbooksByCategory = (category: string) => {
     return ebooks.filter(ebook => ebook.category === category);
   };
 
   const getCategoryAnchor = (category: string) => {
-    return category === 'Manipulation & Toxic Relationships' ? 'manipulation-toxic' : 'dating-red-flags';
+    return category === 'Manipulation & Toxic Relationships' ? 'manipulation-toxic' : 
+           category === 'Dating & Red Flags' ? 'dating-red-flags' : 'self-empowering';
   };
 
   const getCategoryColors = (category: string) => {
-    return category === 'Manipulation & Toxic Relationships' 
-      ? { from: 'from-[hsl(333,65%,59%)]', to: 'to-[hsl(335,77%,80%)]', bg: 'bg-purple-100', text: 'text-purple-700' }
-      : { from: 'from-[hsl(333,65%,59%)]', to: 'to-[hsl(335,77%,80%)]', bg: 'bg-rose-100', text: 'text-rose-700' };
+    if (category === 'Manipulation & Toxic Relationships') {
+      return { from: 'from-[hsl(333,65%,59%)]', to: 'to-[hsl(335,77%,80%)]', bg: 'bg-purple-100', text: 'text-purple-700' };
+    } else if (category === 'Dating & Red Flags') {
+      return { from: 'from-[hsl(333,65%,59%)]', to: 'to-[hsl(335,77%,80%)]', bg: 'bg-rose-100', text: 'text-rose-700' };
+    } else {
+      return { from: 'from-[hsl(333,65%,59%)]', to: 'to-[hsl(335,77%,80%)]', bg: 'bg-pink-100', text: 'text-pink-700' };
+    }
   };
 
   const scrollToCategory = (category: string) => {
@@ -57,18 +87,20 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
       const heroSection = document.querySelector('section');
       const heroBottom = heroSection ? heroSection.offsetTop + heroSection.offsetHeight : 0;
       
-      // Show sticky tabs after hero
       setShowStickyTabs(window.scrollY > heroBottom + 200);
 
-      // Update active tab based on scroll position
       const manipulationSection = document.getElementById('manipulation-toxic');
       const datingSection = document.getElementById('dating-red-flags');
+      const selfSection = document.getElementById('self-empowering');
       
-      if (manipulationSection && datingSection) {
+      if (manipulationSection && datingSection && selfSection) {
         const manipulationTop = manipulationSection.offsetTop - 150;
         const datingTop = datingSection.offsetTop - 150;
+        const selfTop = selfSection.offsetTop - 150;
         
-        if (window.scrollY >= datingTop) {
+        if (window.scrollY >= selfTop) {
+          setActiveTab('self-empowering');
+        } else if (window.scrollY >= datingTop) {
           setActiveTab('dating-red-flags');
         } else if (window.scrollY >= manipulationTop) {
           setActiveTab('manipulation-toxic');
@@ -111,10 +143,8 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
                     ? 'bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white shadow-sm'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
-                aria-controls="manipulation-toxic"
-                aria-label="Navigate to Manipulation & Toxic Relationships section"
               >
-                Manipulation & Toxic
+                Manipulation
               </button>
               <button
                 onClick={() => scrollToCategory('Dating & Red Flags')}
@@ -123,10 +153,18 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
                     ? 'bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white shadow-sm'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
-                aria-controls="dating-red-flags"
-                aria-label="Navigate to Dating & Red Flags section"
               >
-                Dating & Red Flags
+                Dating
+              </button>
+              <button
+                onClick={() => scrollToCategory('Self Empowering')}
+                className={`flex-1 py-2 px-3 rounded-full text-sm font-medium transition-all ${
+                  activeTab === 'self-empowering'
+                    ? 'bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Self
               </button>
             </div>
           </div>
@@ -148,6 +186,12 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
                 className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-4 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all"
               >
                 Dating & Red Flags
+              </button>
+              <button
+                onClick={() => scrollToCategory('Self Empowering')}
+                className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-4 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all"
+              >
+                Self Empowering
               </button>
             </div>
           </div>
@@ -173,7 +217,9 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
                       <p className="text-xl md:text-2xl opacity-90 mb-2">
                         {category === 'Manipulation & Toxic Relationships' 
                           ? 'Recognize the patterns, protect your peace'
-                          : 'Navigate modern dating with confidence'
+                          : category === 'Dating & Red Flags'
+                          ? 'Navigate modern dating with confidence'
+                          : 'Build unshakeable confidence and self-worth'
                         }
                       </p>
                       <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
@@ -185,7 +231,6 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
                 </div>
               </div>
 
-              {/* Thick Mobile Divider */}
               {categoryIndex > 0 && (
                 <div className="md:hidden mb-8">
                   <div className="h-1 bg-gradient-to-r from-gray-300 via-gray-400 to-gray-300 rounded-full"></div>
@@ -216,6 +261,13 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
                               {badge}
                             </span>
                           ))}
+                        </div>
+                      )}
+                      {ebook.comingSoon && (
+                        <div className="absolute top-3 left-3">
+                          <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">
+                            Coming Soon
+                          </span>
                         </div>
                       )}
                     </div>
@@ -255,7 +307,6 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
                         </button>
                       </div>
 
-                      {/* Spacer to push footer to bottom */}
                       <div className="flex-grow"></div>
 
                       {/* Footer section - Price and controls */}
@@ -270,19 +321,45 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
                           </span>
                         </div>
                         
-                        <div className="flex items-center justify-between">
-                        <div className="text-2xl font-bold text-gray-900" aria-label={`Price: ${formatCurrency(ebook.price)}`}>
-                          {formatCurrency(ebook.price)}
-                        </div>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {formatCurrency(ebook.price)}
+                          </div>
                         </div>
 
-                        <button
-                          onClick={() => handleAddToCart(ebook)}
-                          className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 mt-4"
-                        >
-                          <ShoppingCart size={18} />
-                          Add to Cart
-                        </button>
+                        {/* Coming Soon or Add to Cart */}
+                        {ebook.comingSoon ? (
+                          submittedEmails[ebook.id] ? (
+                            <div className="bg-green-50 border-2 border-green-200 text-green-700 py-3 rounded-full text-center font-semibold text-sm">
+                              ✓ You're on the list!
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <input
+                                type="email"
+                                placeholder="Your email for early access"
+                                value={emailInputs[ebook.id] || ''}
+                                onChange={(e) => handleEmailChange(ebook.id, e.target.value)}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-full text-sm focus:outline-none focus:border-pink-400 transition-colors"
+                              />
+                              <button
+                                onClick={() => handleNotifyMe(ebook)}
+                                className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                              >
+                                <Mail size={18} />
+                                Notify Me at Launch
+                              </button>
+                            </div>
+                          )
+                        ) : (
+                          <button
+                            onClick={() => handleAddToCart(ebook)}
+                            className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                          >
+                            <ShoppingCart size={18} />
+                            Add to Cart
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -296,13 +373,16 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart, selectedCate
         <div className="md:hidden fixed bottom-20 right-4 z-30">
           <button
             onClick={() => {
-              const nextCategory = activeTab === 'manipulation-toxic' ? 'Dating & Red Flags' : 'Manipulation & Toxic Relationships';
+              const nextCategory = activeTab === 'manipulation-toxic' 
+                ? 'Dating & Red Flags' 
+                : activeTab === 'dating-red-flags'
+                ? 'Self Empowering'
+                : 'Manipulation & Toxic Relationships';
               scrollToCategory(nextCategory);
             }}
             className="w-14 h-14 bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center"
-            aria-label="Switch between categories"
           >
-            <ChevronRight size={20} className={`transition-transform ${activeTab === 'dating-red-flags' ? 'rotate-180' : ''}`} />
+            <ChevronRight size={20} />
           </button>
         </div>
 
