@@ -1,12 +1,12 @@
-import datingAgeManipulatorsImage from '../assets/images/general/Dating-in-the-Age-of-Manipulators.png';
-import trappedInHisGameImage from '../assets/images/general/Trapped-in-his-game.png';
-import gaslightingUnmaskedImage from '../assets/images/general/Gaslighting-Unmasked.png';
-import loveBombedLeftImage from '../assets/images/general/Love-Bombed-&-Left.png';
-import whyAttractToxicImage from '../assets/images/general/Why-Do-I-Attract-Toxic-Men.png';
-import mrAlmostImage from '../assets/images/general/Mr-Almost.png';
-import loveVsLustImage from '../assets/images/general/Love-vs-Lust.png';
-import charmerTrapImage from '../assets/images/general/The-Charmer-Trap.png';
-import testImage from '../assets/images/general/test.png';
+import datingAgeManipulatorsImage from '../assets/images/Dating-in-the-Age-of-Manipulators.png';
+import trappedInHisGameImage from '../assets/images/Trapped-in-his-game.png';
+import gaslightingUnmaskedImage from '../assets/images/Gaslighting-Unmasked.png';
+import loveBombedLeftImage from '../assets/images/Love-Bombed-&-Left.png';
+import whyAttractToxicImage from '../assets/images/Why-Do-I-Attract-Toxic-Men.png';
+import mrAlmostImage from '../assets/images/Mr-Almost.png';
+import loveVsLustImage from '../assets/images/Love-vs-Lust.png';
+import charmerTrapImage from '../assets/images/The-Charmer-Trap.png';
+import datingAgeManipulatorsImage from '../assets/images/Dating-in-the-Age-of-Manipulators.png';
 
 import { EBook, Bundle } from '../types';
 
@@ -105,7 +105,7 @@ export const ebooks: EBook[] = [
       'Protect your energy and time',
       'Choose men who choose you clearly'
     ],
-    cover: testImage ,
+    cover: datingAgeManipulatorsImage,
     pages: 92,
     audioMinutes: 25
   },
@@ -173,9 +173,9 @@ export const bundles: Bundle[] = [
     id: 'manipulation-recovery',
     title: 'Manipulation Recovery Bundle',
     description: 'Complete toolkit for recognizing and recovering from manipulation',
-    price: 81, // Matches edge function price
-    originalPrice: 117,
-    savings: 36,
+    price: 81, // 42 + 39 + 36 - 36 (cheapest)
+    originalPrice: 117, // 42 + 39 + 36
+    savings: 36, // cheapest book price
     ebookIds: ['trapped-in-his-game', 'why-attract-toxic', 'love-bombed-left'],
     ebooks: []
   },
@@ -183,9 +183,9 @@ export const bundles: Bundle[] = [
     id: 'dating-red-flags',
     title: 'Dating Red Flags Bundle',
     description: 'Navigate modern dating safely and confidently',
-    price: 81, // Matches edge function price
-    originalPrice: 117,
-    savings: 36,
+    price: 81, // 42 + 39 + 36 - 36 (cheapest)
+    originalPrice: 117, // 42 + 39 + 36
+    savings: 36, // cheapest book price
     ebookIds: ['dating-age-manipulators', 'mr-almost', 'charmer-trap'],
     ebooks: []
   }

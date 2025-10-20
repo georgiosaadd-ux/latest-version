@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { CheckoutForm } from './types';
 import { ebooks, bundles } from './data/products';
 import { useCart } from './hooks/useCart';
 import { trackPurchase, trackBeginCheckout } from './utils/analytics';
-import { RateLimiter, CSRFProtection } from './utils/security';
 
 // Components
 import Header from './components/Header';
@@ -20,21 +19,8 @@ import FinalCTA from './components/FinalCTA';
 import Footer from './components/Footer';
 import Cart from './components/Cart';
 import CartToast from './components/CartToast';
-import CheckoutSuccess from './pages/CheckoutSuccess';
-import CheckoutCancel from './pages/CheckoutCancel';
 
 function App() {
-  // Security cleanup interval
-  useEffect(() => {
-    const cleanup = setInterval(() => {
-      RateLimiter.cleanup();
-      CSRFProtection.cleanup();
-    }, 300000); // Every 5 minutes
-
-    return () => clearInterval(cleanup);
-  }, []);
-
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const {
     cart,
@@ -42,8 +28,7 @@ function App() {
     showToast,
     toastMessage,
     appliedDiscounts,
-    upsellDismissed,
-    pair10EbookIds,
+    bundleUpsellDismissed,
     addToCart,
     updateItemQuantity,
     removeFromCart,
@@ -52,28 +37,8 @@ function App() {
     clearCart,
     getCartItemCount,
     getCartSummary,
-    getDiscountedTotal,
-    applyDiscount,
-    removeDiscount,
-    dismissUpsell,
-    getPair10Discount
+    dismissBundleUpsell
   } = useCart();
-
-  useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  useEffect(() => {
-    const handleOpenCart = () => {
-      openCart();
-    };
-    window.addEventListener('openCart', handleOpenCart);
-    return () => window.removeEventListener('openCart', handleOpenCart);
-  }, [openCart]);
 
   // Refs for smooth scrolling
   const ebooksRef = useRef<HTMLElement>(null);
@@ -89,31 +54,41 @@ function App() {
   };
 
   const handleAddToCart = (item: any, source: 'card' | 'modal' = 'card') => {
-    // Security logging (without sensitive data)
-    console.log('Add to cart attempt:', {
-      itemId: item?.id || 'unknown',
-      source,
-      timestamp: new Date().toISOString()
-    });
+    console.log('Adding to cart:', item, source);
     
     addToCart(item.item || item, source);
   };
 
   const handleCheckout = async (form: CheckoutForm) => {
-    // Security logging (without sensitive data)
-    console.log('Checkout initiated:', {
-      timestamp: new Date().toISOString(),
-      itemCount: cart.length
-    });
+    const total = getDiscountedTotal();
+
+    trackBeginCheckout(cart, total);
+
+    // Simulate payment processing
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generate transaction ID
+      const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Track purchase
+      trackPurchase(transactionId, cart, total);
+      
+      // Simulate email sending
+      const downloadLinks = cart.map(item => ({
+        title: item.item.title,
+        downloadUrl: `https://downloads.heartwise.com/${item.item.title.toLowerCase().replace(/\s+/g, '-')}.pdf`
+      }));
+
+      alert(`Thank you ${form.firstName}! 🎉\n\nYour purchase is complete. Check your email (${form.email}) for download links.\n\nTransaction ID: ${transactionId}`);
+      
+      // Clear cart and close
+      clearCart();
+      closeCart();
+    } catch (error) {
+      alert('Payment did not go through, please try again or contact support.');
+    }
   };
-
-  if (currentPath === '/checkout/success') {
-    return <CheckoutSuccess />;
-  }
-
-  if (currentPath === '/checkout/cancel') {
-    return <CheckoutCancel />;
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -159,13 +134,9 @@ function App() {
         onUpdateQuantity={updateItemQuantity}
         onRemoveItem={removeFromCart}
         onCheckout={handleCheckout}
-        appliedDiscounts={appliedDiscounts}
         onAddToCart={(item) => addToCart(item, 'modal')}
-        onApplyDiscount={applyDiscount}
-        upsellDismissed={upsellDismissed}
-        onDismissUpsell={dismissUpsell}
-        pair10EbookIds={pair10EbookIds}
-        getPair10Discount={getPair10Discount}
+        bundleUpsellDismissed={bundleUpsellDismissed}
+        onDismissBundleUpsell={dismissBundleUpsell}
       />
 
       <CartToast

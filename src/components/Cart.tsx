@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import { X, ShoppingBag, Trash2, CreditCard } from 'lucide-react';
+import { X, ShoppingBag, Trash2, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 import { CartItem, CheckoutForm, EBook, Bundle } from '../types';
 import { formatCurrency } from '../utils/currency';
-import { createCheckoutSession } from '../utils/stripe';
-import { SecurityValidator } from '../utils/security';
-import { getCompanionRecommendation } from '../data/categoryPairs';
-import { ebooks } from '../data/products';
-import UpsellModal from './UpsellModal';
+import BundleUpsellModal from './BundleUpsellModal';
 import FreeEbookProgress from './FreeEbookProgress';
 
 interface CartProps {
@@ -19,10 +15,8 @@ interface CartProps {
   appliedDiscounts?: string[];
   onAddToCart?: (item: EBook | Bundle) => void;
   onApplyDiscount?: (code: string, ebookIds?: string[]) => void;
-  upsellDismissed?: boolean;
-  onDismissUpsell?: () => void;
-  pair10EbookIds?: string[];
-  getPair10Discount?: () => { discount: number; affectedItems: CartItem[] };
+  bundleUpsellDismissed?: boolean;
+  onDismissBundleUpsell?: () => void;
 }
 
 const Cart: React.FC<CartProps> = ({
@@ -34,11 +28,8 @@ const Cart: React.FC<CartProps> = ({
   onCheckout,
   appliedDiscounts = [],
   onAddToCart,
-  onApplyDiscount,
-  upsellDismissed = false,
-  onDismissUpsell,
-  pair10EbookIds = [],
-  getPair10Discount
+  bundleUpsellDismissed = false,
+  onDismissBundleUpsell
 }) => {
   const [checkoutForm, setCheckoutForm] = useState<CheckoutForm>({
     firstName: '',
@@ -48,8 +39,9 @@ const Cart: React.FC<CartProps> = ({
   });
   const [showCheckout, setShowCheckout] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showUpsellModal, setShowUpsellModal] = useState(false);
-  const [upsellData, setUpsellData] = useState<{ primary: EBook; companion: EBook } | null>(null);
+  const [showBundleUpsell, setShowBundleUpsell] = useState(false);
+  const [currentEbook, setCurrentEbook] = useState<EBook | null>(null);
+  const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
 
   if (!isOpen) return null;
 
@@ -68,19 +60,85 @@ const Cart: React.FC<CartProps> = ({
         let calculatedDiscount = 0;
         let calculatedFreeCount = 0;
         
-        validItems.forEach(item => {
-          const itemPrice = Number(item.item.price) * item.quantity;
-          calculatedSubtotal += itemPrice;
+        // Separate bundle and individual items
+        const bundleItems = validItems.filter(item => {
+          const isBundle = item.type === 'bundle';
+          console.log('Checking if bundle:', {
+            id: item.id,
+            title: item.item.title,
+            type: item.type,
+            isBundle
+          });
+          return isBundle;
+        });
+        const individualItems = validItems.filter(item => 
+          !bundleItems.includes(item)
+        );
+        
+        console.log('Bundle items:', bundleItems);
+        console.log('Individual items:', individualItems);
+        
+        // Handle pre-discounted bundles - use their stored values
+        bundleItems.forEach(item => {
+          const bundle = item.item as any;
           
-          // Check if this is a custom bundle with pre-calculated discount
-          if (item.item.title?.includes('Custom Bundle') && 'savings' in item.item) {
-            calculatedDiscount += (item.item as any).savings * item.quantity;
-            calculatedFreeCount += ((item.item as any).freeCount || 0) * item.quantity;
+          console.log('Processing bundle:', {
+            title: bundle.title,
+            hasMetadata: !!item.metadata,
+            hasEbooks: !!(bundle.ebooks && Array.isArray(bundle.ebooks)),
+            hasOriginalPrice: !!bundle.originalPrice,
+            hasSavings: bundle.savings !== undefined,
+            bundle: bundle
+          });
+          
+          if (item.metadata?.subtotal && item.metadata?.discount !== undefined) {
+            // Custom bundle with metadata
+            calculatedSubtotal += item.metadata.subtotal * item.quantity;
+            calculatedDiscount += item.metadata.discount * item.quantity;
+            calculatedFreeCount += (item.metadata.freeCount || 0) * item.quantity;
+            console.log('✓ Using custom bundle metadata:', item.metadata);
+          } else if (bundle.originalPrice && bundle.savings !== undefined && bundle.ebooks && Array.isArray(bundle.ebooks)) {
+            // Pre-made bundle with explicit properties
+            calculatedSubtotal += bundle.originalPrice * item.quantity;
+            calculatedDiscount += bundle.savings * item.quantity;
+            calculatedFreeCount += 1 * item.quantity; // Always 1 free book
+            console.log('✓ Using pre-made bundle properties:', { 
+              originalPrice: bundle.originalPrice, 
+              savings: bundle.savings,
+              freeCount: 1,
+              ebooksCount: bundle.ebooks.length
+            });
+          } else if (bundle.ebooks && Array.isArray(bundle.ebooks) && bundle.ebooks.length > 0) {
+            // Pre-made bundle: Calculate from ebooks array
+            const ebooksTotal = bundle.ebooks.reduce((sum: number, ebook: any) => sum + (ebook.price || 0), 0);
+            const bundlePrice = bundle.price;
+            const bundleSavings = ebooksTotal - bundlePrice;
+            
+            calculatedSubtotal += ebooksTotal * item.quantity;
+            calculatedDiscount += bundleSavings * item.quantity;
+            calculatedFreeCount += 1 * item.quantity;
+            
+            console.log('✓ Pre-made bundle from ebooks array:', { 
+              ebooksTotal, 
+              bundlePrice, 
+              bundleSavings,
+              ebooksCount: bundle.ebooks.length,
+              freeCount: 1
+            });
+          } else {
+            // Fallback: no discount (shouldn't happen for bundles)
+            calculatedSubtotal += bundle.price * item.quantity;
+            console.log('⚠ Bundle fallback (no discount):', { price: bundle.price });
           }
         });
         
-        // Apply dynamic bundling logic only for individual items
-        const individualItems = validItems.filter(item => !item.item.title?.includes('Custom Bundle'));
+        // Handle individual items
+        individualItems.forEach(item => {
+          const itemPrice = Number(item.item.price) * item.quantity;
+          calculatedSubtotal += itemPrice;
+        });
+        
+        // Apply dynamic bundling ONLY to individual items
         if (individualItems.length > 0) {
           const totalIndividualItems = individualItems.reduce((sum, item) => sum + item.quantity, 0);
           if (totalIndividualItems >= 3) {
@@ -102,6 +160,13 @@ const Cart: React.FC<CartProps> = ({
         
         const calculatedTotal = calculatedSubtotal - calculatedDiscount;
         
+        console.log('Final calculations:', {
+          subtotal: calculatedSubtotal,
+          discount: calculatedDiscount,
+          total: calculatedTotal,
+          freeCount: calculatedFreeCount
+        });
+        
         return { 
           subtotal: calculatedSubtotal, 
           discount: calculatedDiscount, 
@@ -114,19 +179,18 @@ const Cart: React.FC<CartProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    const firstNameValidation = SecurityValidator.validateName(checkoutForm.firstName, 'First name');
-    if (!firstNameValidation.isValid) {
-      newErrors.firstName = firstNameValidation.error || 'Invalid first name';
+    if (!checkoutForm.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
     }
     
-    const lastNameValidation = SecurityValidator.validateName(checkoutForm.lastName, 'Last name');
-    if (!lastNameValidation.isValid) {
-      newErrors.lastName = lastNameValidation.error || 'Invalid last name';
+    if (!checkoutForm.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
     }
     
-    const emailValidation = SecurityValidator.validateEmail(checkoutForm.email);
-    if (!emailValidation.isValid) {
-      newErrors.email = emailValidation.error || 'Invalid email';
+    if (!checkoutForm.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(checkoutForm.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
     
     setErrors(newErrors);
@@ -136,131 +200,173 @@ const Cart: React.FC<CartProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      handleCheckout();
-    }
-  };
-
-  const handleCheckout = async () => {
-    // Additional security check before checkout
-    if (cart.length === 0 || cart.length > 20) {
-      alert('Invalid cart contents. Please refresh and try again.');
-      return;
-    }
-
-    // Validate all cart items before checkout
-    for (const item of cart) {
-      const itemValidation = SecurityValidator.validateCartItem(item);
-      if (!itemValidation.isValid) {
-        alert('Invalid cart item detected. Please refresh and try again.');
-        return;
-      }
-    }
-
-    try {
-      // Transform cart items to match edge function expectations
-      const transformedItems = cart.map(cartItem => {
-        // Extract the base product ID (remove timestamp suffix if present)
-        let productId = cartItem.item.id;
-        
-        // For custom bundles, we need to map to the correct bundle ID
-        if (cartItem.item.title?.includes('Custom Bundle')) {
-          // This is a custom bundle, we need to determine the correct bundle type
-          // For now, we'll use a generic approach - you may need to adjust this
-          const ebookCount = (cartItem.item as any).ebooks?.length || 0;
-          if (ebookCount >= 3) {
-            // Map to appropriate bundle based on the books included
-            productId = 'manipulation-recovery'; // Default fallback
-          }
-        }
-        
-        return {
-          type: cartItem.type,
-          id: cartItem.id,
-          quantity: cartItem.quantity,
-          item: {
-            ...cartItem.item,
-            id: productId // Use the clean product ID
-          }
-        };
-      });
-
-      const checkoutRequest = {
-        items: transformedItems,
-        customer: checkoutForm,
-        successUrl: `${window.location.origin}/checkout/success`,
-        cancelUrl: `${window.location.origin}/checkout/cancel`
-      };
-
-      // Log checkout attempt (without sensitive data)
-      console.log('Checkout attempt:', {
-        itemCount: checkoutRequest.items.length,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent.substring(0, 50)
-      });
-
-      const { url } = await createCheckoutSession(checkoutRequest);
-      
-      // Redirect to Stripe Checkout
-      window.location.href = url;
-    } catch (error) {
-      console.error('Checkout failed:', error);
-      
-      // Show user-friendly error message
-      const errorMessage = error instanceof Error ? error.message : 'Checkout failed';
-      if (errorMessage.includes('rate limit') || errorMessage.includes('Too many')) {
-        alert('Too many checkout attempts. Please wait a few minutes before trying again.');
-      } else if (errorMessage.includes('Invalid')) {
-        alert('Please check your information and try again.');
-      } else {
-        alert('Checkout failed. Please try again or contact support.');
-      }
+      onCheckout(checkoutForm);
     }
   };
 
   const handleProceedToCheckout = () => {
-    const ebookItems = cart.filter(item => item.type === 'ebook').map(item => item.item as EBook);
-    const bundleCount = cart.filter(item => item.type === 'bundle').length;
+    const ebookItems = cart.filter(item => item.type === 'ebook');
+    const bundleItems = cart.filter(item => item.type === 'bundle');
 
-    if (!upsellDismissed && ebookItems.length === 1 && bundleCount === 0) {
-      const primaryEbook = ebookItems[0];
-      const eligibleCategories = ['Dating & Red Flags', 'Manipulation & Toxic Relationships'];
+    // Show bundle upsell if: exactly 1 ebook, no bundles, not dismissed
+    if (!bundleUpsellDismissed && ebookItems.length === 1 && bundleItems.length === 0) {
+      const ebook = ebookItems[0].item as EBook;
+      setCurrentEbook(ebook);
+      setShowBundleUpsell(true);
+      return;
+    }
 
-      if (eligibleCategories.includes(primaryEbook.category)) {
-        const companion = getCompanionRecommendation(primaryEbook, ebookItems, ebooks);
+    setShowCheckout(true);
+  };
 
-        if (companion) {
-          setUpsellData({ primary: primaryEbook, companion });
-          setShowUpsellModal(true);
-          return;
+  const toggleBundleExpansion = (itemId: string) => {
+    setExpandedBundles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  // Helper function to get ebook details from cart
+  const getEbookDetails = (): Map<string, { cartItemId: string; type: 'ebook' | 'bundle'; title: string }[]> => {
+    const ebookMap = new Map<string, { cartItemId: string; type: 'ebook' | 'bundle'; title: string }[]>();
+    
+    cart.forEach(item => {
+      if (item.type === 'ebook') {
+        const ebook = item.item as EBook;
+        if (!ebookMap.has(ebook.id)) {
+          ebookMap.set(ebook.id, []);
+        }
+        ebookMap.get(ebook.id)!.push({
+          cartItemId: item.id,
+          type: 'ebook',
+          title: ebook.title
+        });
+      } else if (item.type === 'bundle') {
+        const bundle = item.item as Bundle;
+        if (bundle.ebookIds) {
+          bundle.ebookIds.forEach(ebookId => {
+            if (!ebookMap.has(ebookId)) {
+              ebookMap.set(ebookId, []);
+            }
+            const ebookTitle = bundle.ebooks?.find(b => b.id === ebookId)?.title || 'Unknown';
+            ebookMap.get(ebookId)!.push({
+              cartItemId: item.id,
+              type: 'bundle',
+              title: ebookTitle
+            });
+          });
         }
       }
-    }
+    });
+    
+    return ebookMap;
+  };
 
+  const handleBundleSelect = (selectedBooks: EBook[]) => {
+    if (selectedBooks.length === 3 && onAddToCart) {
+      // Check if there's already a pre-made bundle in cart
+      const hasPreMadeBundle = cart.some(item => 
+        item.type === 'bundle' && 
+        !(item.metadata?.pricingMode === 'bundle_pre_discounted' || item.item.title?.includes('Custom Bundle'))
+      );
+      
+      if (hasPreMadeBundle) {
+        alert('⚠️ You already have a pre-made bundle in your cart. Please remove it first before creating a custom bundle.');
+        return;
+      }
+      
+      // Get ebook details from cart
+      const ebookDetails = getEbookDetails();
+      
+      const selectedEbookIds = selectedBooks.map(b => b.id);
+      const duplicateBundles: string[] = [];
+      const itemsToRemove: string[] = [];
+      
+      // Check each selected ebook
+      selectedEbookIds.forEach(ebookId => {
+        if (ebookDetails.has(ebookId)) {
+          const existingItems = ebookDetails.get(ebookId)!;
+          existingItems.forEach(existing => {
+            if (existing.type === 'ebook') {
+              // Single ebook exists - we'll remove it
+              itemsToRemove.push(existing.cartItemId);
+            } else {
+              // It's in another bundle - this is a duplicate
+              duplicateBundles.push(existing.title);
+            }
+          });
+        }
+      });
+      
+      // If any ebook is in another bundle, show warning and don't proceed
+      if (duplicateBundles.length > 0) {
+        alert(`⚠️ "${duplicateBundles[0]}" is already in a bundle in your cart. Please choose different books.`);
+        return;
+      }
+      
+      // Remove individual ebooks that will be in the new bundle
+      itemsToRemove.forEach(itemId => onRemoveItem(itemId));
+      
+      // Create custom bundle
+      const sortedPrices = selectedBooks.map(b => b.price).sort((a, b) => a - b);
+      const subtotal = selectedBooks.reduce((sum, book) => sum + book.price, 0);
+      const discount = sortedPrices[0]; // Cheapest book is free
+      const total = subtotal - discount;
+      
+      // Get the actual EBook IDs
+      const ebookIds = selectedBooks.map(b => b.id);
+      
+      const customBundle = {
+        id: `bundle-upsell-${Date.now()}`,
+        title: `Custom Bundle (3 books)`,
+        description: `Your bundle: ${selectedBooks.map(b => b.title).join(', ')}`,
+        price: total,
+        originalPrice: subtotal,
+        savings: discount,
+        ebookIds: ebookIds,
+        ebooks: selectedBooks,
+        freeCount: 1
+      };
+
+      const cartItem = {
+        type: 'bundle' as const,
+        id: `bundle-upsell-${Date.now()}`,
+        item: customBundle,
+        quantity: 1,
+        metadata: {
+          subtotal: subtotal,
+          discount: discount,
+          freeCount: 1,
+          pricingMode: 'bundle_pre_discounted' as const,
+          originalItems: selectedBooks.map(book => ({
+            id: book.id,
+            title: book.title,
+            price: book.price
+          }))
+        }
+      };
+
+      console.log('Creating custom bundle:', cartItem);
+      onAddToCart(cartItem);
+      setShowBundleUpsell(false);
+      setShowCheckout(true);
+    }
+  };
+
+  const handleContinueWithoutBundle = () => {
+    setShowBundleUpsell(false);
     setShowCheckout(true);
   };
 
-  const handleAddCompanionAndCheckout = () => {
-    if (upsellData && onAddToCart && onApplyDiscount) {
-      const primaryEbook = upsellData.primary;
-      const companionEbook = upsellData.companion;
-
-      onAddToCart(companionEbook);
-      onApplyDiscount('PAIR10', [primaryEbook.id, companionEbook.id]);
-
-      setShowUpsellModal(false);
-      setShowCheckout(false);
-    }
-  };
-
-  const handleContinueWithoutAdding = () => {
-    setShowUpsellModal(false);
-    setShowCheckout(true);
-  };
-
-  const handleDismissUpsell = () => {
-    setShowUpsellModal(false);
-    if (onDismissUpsell) {
-      onDismissUpsell();
+  const handleDismissBundleUpsell = () => {
+    setShowBundleUpsell(false);
+    if (onDismissBundleUpsell) {
+      onDismissBundleUpsell();
     }
   };
 
@@ -302,109 +408,109 @@ const Cart: React.FC<CartProps> = ({
                     <p className="text-sm text-gray-400">Choose a book that sees you</p>
                   </div>
                 ) : (
-                  <>
-                    {appliedDiscounts.includes('PAIR10') && pair10EbookIds.length === 2 && (
-                      <div className="bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-300 rounded-xl p-4 mb-4">
-                        <p className="text-pink-700 font-bold text-center text-lg">
-                          ✨ 10% OFF applied to BOTH titles ✨
-                        </p>
-                      </div>
-                    )}
-                    <div className="space-y-4">
-                    {cart.map((item) => (
-                      <div key={item.id} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-800 mb-1">
-                              {item.item.title}
-                            </h3>
-                            {item.type === 'bundle' && (
-                              <p className="text-sm text-gray-500 mb-2">
-                                {item.metadata?.pricingMode === 'bundle_pre_discounted' ? (
-                                  <>
-                                    Bundle • {item.metadata.originalItems?.length || 0} eBooks
-                                    <br />
-                                    <span className="text-xs text-gray-400">
-                                      Total: {formatCurrency(item.item.price)} • Avg {formatCurrency(Math.round(item.item.price / (item.metadata.originalItems?.length || 1)))}/book
-                                    </span>
-                                  </>
-                                ) : (
-                                  `Bundle • ${(item.item as Bundle).ebooks?.length || 0} eBooks`
+                  <div className="space-y-4">
+                    {cart.map((item) => {
+                      const isExpanded = expandedBundles.has(item.id);
+                      const isBundle = item.type === 'bundle';
+                      
+                      // Get books to display - prefer ebooks array from bundle item
+                      const bundle = isBundle ? (item.item as Bundle) : null;
+                      const booksToDisplay = bundle?.ebooks || item.metadata?.originalItems || null;
+                      const canExpand = isBundle && booksToDisplay && booksToDisplay.length > 0;
+                      
+                      console.log('Cart item render:', {
+                        id: item.id,
+                        title: item.item.title,
+                        isBundle,
+                        bundleEbooks: bundle?.ebooks?.length,
+                        metadataOriginalItems: item.metadata?.originalItems?.length,
+                        booksToDisplay: booksToDisplay?.length,
+                        canExpand,
+                        isExpanded
+                      });
+                      
+                      return (
+                        <div key={item.id} className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-gray-800">
+                                  {item.item.title}
+                                </h3>
+                                {canExpand && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      console.log('Toggling bundle:', {
+                                        id: item.id,
+                                        currentState: expandedBundles.has(item.id),
+                                        allExpanded: Array.from(expandedBundles)
+                                      });
+                                      toggleBundleExpansion(item.id);
+                                    }}
+                                    className="text-pink-600 hover:text-pink-800 transition-colors p-1 bg-purple-50 rounded hover:bg-purple-100"
+                                    aria-label={isExpanded ? "Collapse bundle" : "Expand bundle"}
+                                    type="button"
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronUp size={18} />
+                                    ) : (
+                                      <ChevronDown size={18} />
+                                    )}
+                                  </button>
                                 )}
-                              </p>
-                            )}
-                            {item.type === 'ebook' && (
-                              <>
-                                {appliedDiscounts.includes('PAIR10') && pair10EbookIds.includes((item.item as EBook).id) ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-400 line-through">
-                                      {formatCurrency(item.item.price)}
-                                    </span>
-                                    <span className="text-sm font-bold text-pink-600">
-                                      {formatCurrency(item.item.price * 0.9)} each
-                                    </span>
-                                    <span className="bg-pink-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                                      10% OFF
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-gray-600">
-                                    {formatCurrency(item.item.price)} each
-                                  </p>
-                                )}
-                              </>
-                            )}
-                            {item.metadata?.pricingMode === 'bundle_pre_discounted' && (
-                              <div className="mt-2 space-y-1">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-green-600 font-medium">Free books applied:</span>
-                                  <span className="text-green-600 font-bold">{item.metadata.freeCount}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-[#D8558E] font-medium">Saved you:</span>
-                                  <span className="text-[#D8558E] font-bold">{formatCurrency(item.metadata.discount || 0)}</span>
-                                </div>
                               </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => onRemoveItem(item.id)}
-                            className="text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between mt-3">
-                          <div></div>
-                          {item.type === 'ebook' && appliedDiscounts.includes('PAIR10') && pair10EbookIds.includes((item.item as EBook).id) ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-400 line-through text-sm">
-                                {formatCurrency(item.item.price * item.quantity)}
-                              </span>
-                              <span className="font-bold text-pink-600 text-lg">
-                                {formatCurrency(item.item.price * item.quantity * 0.9)}
-                              </span>
+                              
+                              {item.type === 'bundle' && (
+                                <p className="text-sm text-gray-500 mb-2">
+                                  Bundle • {booksToDisplay?.length || 0} eBooks
+                                </p>
+                              )}
+                              
+                              {/* Bundle expansion - works for BOTH custom and pre-made */}
+                              {isExpanded && booksToDisplay && (
+                                <div className="mt-2 mb-2 pl-4 border-l-2 border-pink-300 space-y-1 bg-white rounded p-3">
+                                  <p className="text-xs font-semibold text-pink-400 uppercase mb-2">Books in this bundle:</p>
+                                  {booksToDisplay.map((book: any, idx: number) => (
+                                    <div key={book.id || idx} className="text-sm text-gray-700 flex items-center gap-2 py-1">
+                                      <span className="text-pink-400 font-bold">•</span>
+                                      <span className="flex-1">{book.title}</span>
+                                      <span className="text-gray-500 text-xs font-medium">{formatCurrency(book.price)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {item.type === 'ebook' && (
+                                <p className="text-sm text-gray-600">
+                                  {formatCurrency(item.item.price)} each
+                                </p>
+                              )}
                             </div>
-                          ) : (
+                            <button
+                              onClick={() => onRemoveItem(item.id)}
+                              className="text-red-500 hover:text-red-700 transition-colors flex-shrink-0"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-end mt-3">
                             <p className="font-semibold text-gray-800">
                               {formatCurrency(item.item.price * item.quantity)}
                             </p>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    </div>
-                  </>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
               {cart.length > 0 && (() => {
-                const pair10Data = getPair10Discount ? getPair10Discount() : { discount: 0, affectedItems: [] };
-                const hasPair10 = appliedDiscounts.includes('PAIR10') && pair10Data.discount > 0;
-
-                const originalTotal = cart.reduce((sum, item) => sum + (item.item.price * item.quantity), 0);
-                const finalTotal = hasPair10 ? total - pair10Data.discount : total;
-
+                console.log('Cart summary:', { subtotal, discount, total, freeCount });
+                console.log('Cart items:', cart);
+                
                 return (
                   <div className="border-t border-gray-200 p-6">
                     {discount > 0 && (
@@ -416,37 +522,24 @@ const Cart: React.FC<CartProps> = ({
                     {freeCount > 0 && (
                       <>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-green-600 font-medium">Free books applied:</span>
+                          <span className="text-green-600 font-medium">Free books:</span>
                           <span className="text-green-600 font-bold">{freeCount}</span>
                         </div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[#D8558E] font-medium">Saved you:</span>
+                          <span className="text-[#D8558E] font-medium">You saved:</span>
                           <span className="text-[#D8558E] font-bold">{formatCurrency(discount)}</span>
                         </div>
                       </>
                     )}
 
-                    {hasPair10 && (
-                      <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 mb-3">
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-pink-800 font-semibold">You saved 10%:</span>
-                          <span className="text-pink-800 font-bold">{formatCurrency(pair10Data.discount)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-pink-700">
-                          <span>Before: <span className="font-bold">{formatCurrency(originalTotal)}</span></span>
-                          <span>→ Now: <span className="font-bold">{formatCurrency(finalTotal)}</span></span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between text-xl font-bold mb-4">
+                    <div className="flex items-center justify-between text-xl font-bold mb-4 pt-2 border-t border-gray-200">
                       <span>Total:</span>
-                      <span>{formatCurrency(finalTotal)}</span>
+                      <span>{formatCurrency(total)}</span>
                     </div>
 
                     <button
                       onClick={handleProceedToCheckout}
-                     className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
                     >
                       <CreditCard size={20} />
                       Proceed to Checkout
@@ -542,34 +635,19 @@ const Cart: React.FC<CartProps> = ({
                       {freeCount > 0 && (
                         <>
                           <div className="flex justify-between text-green-600 font-medium pt-2 border-t border-gray-200">
-                            <span>Free books applied:</span>
+                            <span>Free books:</span>
                             <span>{freeCount}</span>
                           </div>
                           <div className="flex justify-between text-[#D8558E] font-medium">
-                            <span>Saved you:</span>
+                            <span>You saved:</span>
                             <span>{formatCurrency(discount)}</span>
                           </div>
                         </>
                       )}
                       <div className="flex justify-between font-bold text-gray-800 pt-2 border-t border-gray-200">
                         <span>Total:</span>
-                        <span>
-                          {appliedDiscounts.includes('PAIR10') && cart.filter(item => item.type === 'ebook').length >= 2
-                            ? formatCurrency(total - (cart.filter(item => item.type === 'ebook').reduce((sum, item) => sum + (item.item.price * item.quantity), 0) * 0.1))
-                            : formatCurrency(total)
-                          }
-                        </span>
+                        <span>{formatCurrency(total)}</span>
                       </div>
-                      
-                      {/* Show applied discounts in checkout */}
-                      {appliedDiscounts.includes('PAIR10') && cart.filter(item => item.type === 'ebook').length >= 2 && (
-                        <div className="pt-2 border-t border-gray-200 mt-2">
-                          <div className="flex justify-between text-sm text-green-600">
-                            <span>PAIR10 Discount:</span>
-                            <span>-{formatCurrency(cart.filter(item => item.type === 'ebook').reduce((sum, item) => sum + (item.item.price * item.quantity), 0) * 0.1)}</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </form>
@@ -584,8 +662,8 @@ const Cart: React.FC<CartProps> = ({
                     Back to Cart
                   </button>
                   <button
-                    onClick={handleCheckout}
-                   className="flex-1 bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    onClick={handleSubmit}
+                    className="flex-1 bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
                   >
                     <CreditCard size={20} />
                     Complete Purchase
@@ -603,15 +681,13 @@ const Cart: React.FC<CartProps> = ({
         </div>
       </div>
 
-      {showUpsellModal && upsellData && (
-        <UpsellModal
-          isOpen={showUpsellModal}
-          primaryEbook={upsellData.primary}
-          companionEbook={upsellData.companion}
-          onAddAndCheckout={handleAddCompanionAndCheckout}
-          onContinueWithoutAdding={handleContinueWithoutAdding}
-          onDismiss={handleDismissUpsell}
-          currentEbookCount={ebookCount}
+      {showBundleUpsell && currentEbook && (
+        <BundleUpsellModal
+          isOpen={showBundleUpsell}
+          currentEbook={currentEbook}
+          onSelectBundle={handleBundleSelect}
+          onContinueWithoutBundle={handleContinueWithoutBundle}
+          onDismiss={handleDismissBundleUpsell}
         />
       )}
     </div>

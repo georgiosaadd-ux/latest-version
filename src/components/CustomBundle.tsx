@@ -166,7 +166,7 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
 
       // Create custom bundle item
       const customBundle = {
-        id: 'manipulation-recovery', // Map to a valid bundle ID from your PRICE_LIST
+        id: `custom-bundle-${Date.now()}`,
         title: `Custom Bundle (${totalSelected} books)`,
         description: `Your personalized selection: ${selectedBooks.map(b => b.title).join(', ')}`,
         price: total,
@@ -180,7 +180,7 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
       // Create cart item with metadata to prevent double discounting
       const cartItem = {
         type: 'bundle' as const,
-        id: 'manipulation-recovery', // Use the same ID as the bundle
+        id: `custom-bundle-${Date.now()}`,
         item: customBundle,
         quantity: 1,
         metadata: {

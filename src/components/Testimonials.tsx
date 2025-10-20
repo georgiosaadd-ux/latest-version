@@ -1,9 +1,12 @@
 import React from 'react';
-import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Quote, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 
 const Testimonials: React.FC = () => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [isPaused, setIsPaused] = React.useState(false);
+  const [mediaCurrentIndex, setMediaCurrentIndex] = React.useState(0);
+  const [showVideoModal, setShowVideoModal] = React.useState(false);
+  const [selectedVideo, setSelectedVideo] = React.useState<string | null>(null);
 
   const testimonials = [
     {
@@ -53,13 +56,50 @@ const Testimonials: React.FC = () => {
     }
   ];
 
-  // Auto-scroll effect
+  // Placeholder media items - replace with your actual videos/images
+  const mediaItems = [
+    {
+      id: 1,
+      type: 'video',
+      thumbnail: 'https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=400',
+      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+      title: 'Sarah\'s Story'
+    },
+    {
+      id: 2,
+      type: 'image',
+      thumbnail: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400',
+      title: 'Maria\'s Transformation'
+    },
+    {
+      id: 3,
+      type: 'video',
+      thumbnail: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400',
+      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+      title: 'Jessica\'s Journey'
+    },
+    {
+      id: 4,
+      type: 'image',
+      thumbnail: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400',
+      title: 'Anna\'s Awakening'
+    },
+    {
+      id: 5,
+      type: 'video',
+      thumbnail: 'https://images.pexels.com/photos/3184639/pexels-photo-3184639.jpeg?auto=compress&cs=tinysrgb&w=400',
+      videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+      title: 'Rachel\'s Recovery'
+    }
+  ];
+
+  // Auto-scroll effect for testimonials
   React.useEffect(() => {
     if (isPaused) return;
     
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    }, 2000); // Every 2 seconds
+    }, 2000);
     
     return () => clearInterval(interval);
   }, [isPaused, testimonials.length]);
@@ -67,28 +107,47 @@ const Testimonials: React.FC = () => {
   const nextTestimonial = () => {
     setIsPaused(true);
     setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    // Resume auto-scroll after 5 seconds of manual interaction
     setTimeout(() => setIsPaused(false), 5000);
   };
 
   const prevTestimonial = () => {
     setIsPaused(true);
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-    // Resume auto-scroll after 5 seconds of manual interaction
     setTimeout(() => setIsPaused(false), 5000);
   };
 
   const goToTestimonial = (index: number) => {
     setIsPaused(true);
     setCurrentIndex(index);
-    // Resume auto-scroll after 5 seconds of manual interaction
     setTimeout(() => setIsPaused(false), 5000);
   };
 
+  // Media carousel controls
+  const nextMedia = () => {
+    setMediaCurrentIndex((prev) => (prev + 1) % mediaItems.length);
+  };
+
+  const prevMedia = () => {
+    setMediaCurrentIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
+  };
+
+  const handleMediaClick = (item: any) => {
+    if (item.type === 'video') {
+      setSelectedVideo(item.videoUrl);
+      setShowVideoModal(true);
+    }
+  };
+
+  const closeVideoModal = () => {
+    setShowVideoModal(false);
+    setSelectedVideo(null);
+  };
+
   return (
-    <section id="testimonials" className="py-16 bg-white overflow-hidden">
+    <section id="testimonials" className="py-16 bg-gradient-to-br from-rose-50 via-pink-50 to-cream overflow-hidden">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
+        {/* Header */}
+        <div className="text-center mb-12 animate-fade-in">
           <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6">
             <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
               Same games, Same lies, Same confusion.<br />
@@ -98,7 +157,91 @@ const Testimonials: React.FC = () => {
           <p className="text-xl text-gray-600">What helped them see the truth can help you too.</p>
         </div>
 
-        {/* Carousel container */}
+        {/* Video/Image Carousel */}
+        <div className="relative max-w-6xl mx-auto mb-16">
+          <div className="relative overflow-hidden">
+            {/* Navigation buttons for media */}
+            <button
+              onClick={prevMedia}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 z-20 w-10 h-10 bg-white/90 backdrop-blur-sm shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-all hover:scale-110"
+              style={{ color: 'hsl(333, 65%, 59%)' }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            
+            <button
+              onClick={nextMedia}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20 w-10 h-10 bg-white/90 backdrop-blur-sm shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-all hover:scale-110"
+              style={{ color: 'hsl(333, 65%, 59%)' }}
+            >
+              <ChevronRight size={20} />
+            </button>
+
+            {/* Media items */}
+            <div className="flex gap-4 px-12 py-8 animate-fade-in">
+              <div 
+                className="flex transition-transform duration-500 ease-in-out gap-4"
+                style={{ 
+                  transform: `translateX(-${mediaCurrentIndex * (100 / Math.min(mediaItems.length, 3))}%)`,
+                  width: `${(mediaItems.length / Math.min(mediaItems.length, 3)) * 100}%`
+                }}
+              >
+                {mediaItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative flex-shrink-0 cursor-pointer group"
+                    style={{ width: `${100 / Math.min(mediaItems.length, 3)}%` }}
+                    onClick={() => handleMediaClick(item)}
+                  >
+                    <div className="relative aspect-video rounded-2xl overflow-hidden border-4 border-pink-200 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                      <img
+                        src={item.thumbnail}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Overlay for videos */}
+                      {item.type === 'video' && (
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-all">
+                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <Play size={24} className="text-pink-600 ml-1" />
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Gradient overlay for images */}
+                      {item.type === 'image' && (
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                    
+                    {/* Title */}
+                    <p className="text-center mt-3 font-medium text-gray-700 group-hover:text-pink-600 transition-colors">
+                      {item.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Media dots indicator */}
+            <div className="flex justify-center space-x-2 mt-4">
+              {mediaItems.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setMediaCurrentIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === mediaCurrentIndex 
+                      ? 'bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)]' 
+                      : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Testimonial Cards Carousel */}
         <div className="relative max-w-6xl mx-auto">
           {/* Manual navigation buttons */}
           <button
@@ -178,7 +321,7 @@ const Testimonials: React.FC = () => {
             </div>
           </div>
           
-          {/* Dots indicator */}
+          {/* Dots indicator for testimonials */}
           <div className="flex justify-center mt-8 space-x-2">
             {testimonials.map((_, index) => (
               <button
@@ -196,6 +339,34 @@ const Testimonials: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Video Modal */}
+      {showVideoModal && selectedVideo && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={closeVideoModal}
+        >
+          <div 
+            className="relative bg-white rounded-2xl overflow-hidden shadow-2xl max-w-4xl w-full aspect-video"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeVideoModal}
+              className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+            >
+              ×
+            </button>
+            <video
+              src={selectedVideo}
+              controls
+              autoPlay
+              className="w-full h-full"
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
