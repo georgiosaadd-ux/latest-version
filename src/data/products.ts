@@ -16,7 +16,28 @@ const comparisonTrapImage = 'https://images.pexels.com/photos/3184465/pexels-pho
 import { EBook, Bundle } from '../types';
 
 export const ebooks: EBook[] = [
+  // =========================
   // Manipulation & Toxic Relationships
+  // =========================
+  {
+    id: 'dating-age-manipulators',
+    title: 'Dating in the Age of Manipulators',
+    subtitle: 'Red Flags You Cannot Ignore',
+    category: 'Manipulation & Toxic Relationships',
+    price: 42,
+    description: 'Navigate modern dating with confidence and clarity.',
+    badges: ['Best Seller', 'Reader Favorite'],
+    takeaways: [
+      'Spot manipulation in first conversations',
+      'Trust red flags over potential',
+      'Navigate modern dating dangers',
+      'Protect your energy and time',
+      'Choose men who choose you clearly'
+    ],
+    cover: datingAgeManipulatorsImage,
+    pages: 92,
+    audioMinutes: 25
+  },
   {
     id: 'trapped-in-his-game',
     title: 'Trapped in His Game',
@@ -37,11 +58,49 @@ export const ebooks: EBook[] = [
     audioMinutes: 22
   },
   {
+    id: 'love-vs-lust',
+    title: 'Love vs Lust',
+    subtitle: 'Chemistry Without Blindness',
+    category: 'Manipulation & Toxic Relationships',
+    price: 34,
+    description: 'Tell obsession from connection. Choose what actually loves you back.',
+    badges: [],
+    takeaways: [
+      'Spot when desire is disguising disrespect',
+      'Read early signals that passion is one-sided',
+      'Balance chemistry with character so you stop self-sabotage',
+      'Build standards that keep you out of situationships',
+      'Choose partners who choose you with clarity'
+    ],
+    cover: loveVsLustImage,
+    pages: 68,
+    audioMinutes: 18
+  },
+  {
+    id: 'love-bombed-left',
+    title: 'Love-Bombed & Left',
+    subtitle: 'Break the Cycle of Emotional Highs and Crashes',
+    category: 'Manipulation & Toxic Relationships',
+    price: 39,
+    description: 'Stop getting swept up in intensity that ends in silence.',
+    badges: ['Best Seller'],
+    takeaways: [
+      'Decode love-bombing vs. real intimacy',
+      'Avoid the attention-withdrawal trap',
+      'Build self-soothing that doesn’t depend on him',
+      'Stop confusing anxiety with attraction',
+      'Choose stability that still excites you'
+    ],
+    cover: loveBombedLeftImage,
+    pages: 76,
+    audioMinutes: 20
+  },
+{
     id: 'gaslighting-unmasked',
     title: 'Gaslighting Unmasked',
     subtitle: 'Reclaim Your Reality',
     category: 'Manipulation & Toxic Relationships',
-    price: 34,
+    price: 14,
     description: 'End the confusion, reclaim your reality.',
     badges: [],
     takeaways: [
@@ -56,70 +115,11 @@ export const ebooks: EBook[] = [
     audioMinutes: 18
   },
   {
-    id: 'love-bombed-left',
-    title: 'Love-Bombed & Left',
-    subtitle: 'Breaking the Narcissist Cycle',
-    category: 'Manipulation & Toxic Relationships',
-    price: 36,
-    description: 'Break the narcissist cycle for good.',
-    badges: [],
-    takeaways: [
-      'Understand why love-bombing feels so intense',
-      'Recognize the devalue and discard pattern',
-      'Break the trauma bond that keeps you hooked',
-      'Heal from narcissistic abuse',
-      'Prevent falling for it again'
-    ],
-    cover: loveBombedLeftImage,
-    pages: 68,
-    audioMinutes: 19
-  },
-  {
-    id: 'why-attract-toxic',
-    title: 'Why Do I Attract Toxic Men?',
-    subtitle: 'Breaking Harmful Patterns',
-    category: 'Manipulation & Toxic Relationships',
-    price: 39,
-    description: 'Stop the pattern that keeps hurting you.',
-    badges: [],
-    takeaways: [
-      'Understand your attraction patterns',
-      'Heal childhood wounds that draw toxicity',
-      'Recognize red flags in the first conversation',
-      'Build self-worth that repels manipulation',
-      'Attract healthy, secure relationships'
-    ],
-    cover: whyAttractToxicImage,
-    pages: 58,
-    audioMinutes: 16
-  },
-  
-  // Dating & Red Flags
-  {
-    id: 'dating-age-manipulators',
-    title: 'Dating in the Age of Manipulators',
-    subtitle: 'Red Flags You Cannot Ignore',
-    category: 'Dating & Red Flags',
-    price: 42,
-    description: 'Navigate modern dating with confidence and clarity.',
-    badges: ['Best Seller', 'Reader Favorite'],
-    takeaways: [
-      'Spot manipulation in first conversations',
-      'Trust red flags over potential',
-      'Navigate modern dating dangers',
-      'Protect your energy and time',
-      'Choose men who choose you clearly'
-    ],
-    cover: datingAgeManipulatorsImage,
-    pages: 92,
-    audioMinutes: 25
-  },
-  {
     id: 'mr-almost',
     title: 'Mr. Almost',
     subtitle: 'Stop Waiting for Someone Who Won\'t Choose You',
-    category: 'Dating & Red Flags',
-    price: 39,
+    category: 'Manipulation & Toxic Relationships',
+    price: 15,
     description: 'Stop waiting for someone who will not choose you.',
     badges: [],
     takeaways: [
@@ -133,167 +133,185 @@ export const ebooks: EBook[] = [
     pages: 64,
     audioMinutes: 17
   },
+
   {
-    id: 'love-vs-lust',
-    title: 'Love vs. Lust',
-    subtitle: 'Know the Difference, Protect Your Heart',
-    category: 'Dating & Red Flags',
-    price: 36,
-    description: 'Know the difference, protect your heart.',
+    id: 'why-attract-toxic',
+    title: 'Why Do I Attract Toxic Men?',
+    subtitle: 'Breaking Harmful Patterns',
+    category: 'Manipulation & Toxic Relationships',
+    price: 15,
+    description: 'Stop the pattern that keeps hurting you.',
     badges: [],
     takeaways: [
-      'Understand the difference between love and lust',
-      'Stop mistaking intensity for love',
-      'Recognize when you\'re being used',
-      'Build emotional connection before physical',
-      'Date with your mind, not just your heart'
+      'Understand your attraction patterns',
+      'Heal childhood wounds that draw toxicity',
+      'Recognize red flags in the first conversation',
+      'Build self-worth that repels manipulation',
+      'Attract healthy, secure relationships'
     ],
-    cover: loveVsLustImage,
-    pages: 48,
-    audioMinutes: 15
+    cover: whyAttractToxicImage,
+    pages: 58,
+    audioMinutes: 16
+  },
+  // =========================
+  // Self Empowering
+  // =========================
+  {
+    id: 'silent-girl-syndrome',
+    title: 'Silent Girl Syndrome',
+    subtitle: 'Find Your Voice in Rooms That Scare You',
+    category: 'Self Empowering',
+    price: 38,
+    comingSoon: true,
+    description: 'From trembling to taking up space.',
+    badges: [],
+    takeaways: [
+      'Reduce social anxiety in real moments',
+      'Use micro-bravery to build confidence daily',
+      'Speak up without shaking',
+      'Set gentle boundaries that stick',
+      'Own the room without being the loudest'
+    ],
+    cover: silentGirlSyndromeImage,
+    pages: 70,
+    audioMinutes: 19
+  },
+
+  
+  {
+    id: 'girl-never-felt-enough',
+    title: 'The Girl Who Never Felt Enough',
+    subtitle: 'End the War With Your Reflection',
+    category: 'Self Empowering',
+    price: 36,
+    comingSoon: true,
+    description: 'Heal the “not enough” story for good.',
+    badges: [],
+    takeaways: [
+      'Stop feeding the comparison spiral',
+      'Rewire perfectionism into progress',
+      'Build self-respect rituals',
+      'Set goals that aren’t punishment',
+      'Become your own safe place'
+    ],
+    cover: girlNeverFeltEnoughImage,
+    pages: 74,
+    audioMinutes: 19
   },
   {
-    id: 'charmer-trap',
-    title: 'The Charmer Trap',
-    subtitle: 'When Attractive Hides Dangerous',
-    category: 'Dating & Red Flags',
-    price: 36,
-    description: 'When attractive hides dangerous, stay safe.',
+    id: 'too-kind-to-survive',
+    title: 'Too Kind to Survive',
+    subtitle: 'The Power of No and Protecting Your Peace',
+    category: 'Self Empowering',
+    price: 40,
+    comingSoon: true,
+    description: 'I Broke Myself to Please Others, Until I Learned the Power of No',
     badges: [],
     takeaways: [
-      'See past charm to character',
-      'Understand why charmers target you',
-      'Protect yourself from smooth talkers',
-      'Trust actions over words',
-      'Choose substance over style'
+      'Learn to say no without guilt or explanation',
+      'Set boundaries that protect your energy and time',
+      'Stop sacrificing yourself for others\' comfort',
+      'Understand the difference between kindness and self-destruction',
+      'Reclaim your power through healthy boundaries'
     ],
-    cover: charmerTrapImage,
-    pages: 76,
-    },
-  
-  // Self Empowering
-    {
-      id: 'silent-girl-syndrome',
-      title: 'Silent Girl Syndrome',
-      subtitle: 'From Shaking Voice to Owning Every Room',
-      category: 'Self Empowering',
-      price: 38,
-        comingSoon: true,  // ADD THIS LINE
-      description: 'I Couldn\'t Speak Without Shaking, Now I Own Every Room',
-      badges: [],
-      takeaways: [
-        'Overcome the fear of speaking up in any situation',
-        'Build unshakeable confidence from the inside out',
-        'Transform anxiety into authentic presence',
-        'Master the art of commanding respect without aggression',
-        'Find your voice and use it powerfully'
-      ],
-      cover: silentGirlSyndromeImage,
-      pages: 82,
-      audioMinutes: 21
-    },
-    {
-      id: 'girl-never-felt-enough',
-      title: 'The Girl Who Never Felt Enough',
-      subtitle: 'Stop Seeking Validation, Start Being Whole',
-      category: 'Self Empowering',
-      price: 36,
-        comingSoon: true,  // ADD THIS LINE
-      description: 'I Looked for Validation in Everyone',
-      badges: [],
-      takeaways: [
-        'Break free from the endless need for approval',
-        'Discover your inherent worth beyond others\' opinions',
-        'Stop people-pleasing and start self-honoring',
-        'Build internal validation that never wavers',
-        'Become whole without needing external confirmation'
-      ],
-      cover: girlNeverFeltEnoughImage,
-      pages: 74,
-      audioMinutes: 19
-    },
-    {
-      id: 'too-kind-to-survive',
-      title: 'Too Kind to Survive',
-      subtitle: 'The Power of No and Protecting Your Peace',
-      category: 'Self Empowering',
-      price: 40,
-        comingSoon: true,  // ADD THIS LINE
-      description: 'I Broke Myself to Please Others, Until I Learned the Power of No',
-      badges: [],
-      takeaways: [
-        'Learn to say no without guilt or explanation',
-        'Set boundaries that protect your energy and time',
-        'Stop sacrificing yourself for others\' comfort',
-        'Understand the difference between kindness and self-destruction',
-        'Reclaim your power through healthy boundaries'
-      ],
-      cover: tooKindToSurviveImage,
-      pages: 88,
-      audioMinutes: 23
-    },
-    {
-      id: 'comparison-trap',
-      title: 'The Girl Who Changed Her Bloodline',
-      subtitle: 'See Your Own Light, Stop Dimming It',
-      category: 'Self Empowering',
-      price: 34,
-        comingSoon: true,  // ADD THIS LINE
-      description: 'Jealous of Her, Blind to Me',
-      badges: [],
-      takeaways: [
-        'Break free from the comparison cycle that steals your joy',
-        'Recognize your unique strengths and gifts',
-        'Stop measuring your worth against others\' highlight reels',
-        'Transform jealousy into inspiration and growth',
-        'Celebrate your journey without needing to compete'
-      ],
-      cover: comparisonTrapImage,
-      pages: 66,
-      audioMinutes: 17
+    cover: tooKindToSurviveImage,
+    pages: 88,
+    audioMinutes: 23
+  },
+  {
+    id: 'comparison-trap',
+    title: 'The Girl Who Changed Her Bloodline',
+    subtitle: 'See Your Own Light, Stop Dimming It',
+    category: 'Self Empowering',
+    price: 34,
+    comingSoon: true,
+    description: 'Break comparison, discover power.',
+    badges: [],
+    takeaways: [
+      'Break free from the comparison cycle that steals your joy',
+      'Recognize your unique strengths and gifts',
+      'Stop measuring your worth against others\' highlight reels',
+      'Transform jealousy into inspiration and growth',
+      'Celebrate your journey without needing to compete'
+    ],
+    cover: comparisonTrapImage,
+    pages: 66,
+    audioMinutes: 17
   }
-].flat();
+];
 
 export const bundles: Bundle[] = [
   {
     id: 'manipulation-recovery',
     title: 'Manipulation Recovery Bundle',
     description: 'Complete toolkit for recognizing and recovering from manipulation',
-    price: 81, // 42 + 39 + 36 - 36 (cheapest)
-    originalPrice: 117, // 42 + 39 + 36
-    savings: 36, // cheapest book price
-    ebookIds: ['trapped-in-his-game', 'why-attract-toxic', 'love-bombed-left'],
-    ebooks: []
-  },
-  {
-    id: 'dating-red-flags',
-    title: 'Dating Red Flags Bundle',
-    description: 'Navigate modern dating safely and confidently',
-    price: 81, // 42 + 39 + 36 - 36 (cheapest)
-    originalPrice: 117, // 42 + 39 + 36
-    savings: 36, // cheapest book price
-    ebookIds: ['dating-age-manipulators', 'mr-almost', 'charmer-trap'],
-    ebooks: []
-  },
-  {
-    id: 'self-empowering',
-    title: 'Self Empowering Bundle',
-    description: 'Complete toolkit for building unshakeable confidence and self-worth',
-    price: 81, // 40 + 38 + 36 - 34 (cheapest)
-    originalPrice: 148, // 40 + 38 + 36 + 34
-    savings: 34, // cheapest book price
-    ebookIds: ['too-kind-to-survive', 'silent-girl-syndrome', 'girl-never-felt-enough'],
+    // prices will be computed dynamically below
+    price: 0,
+    originalPrice: 0,
+    savings: 0,
+    // IMPORTANT: use EBOOK IDs here, not titles
+    ebookIds: ['trapped-in-his-game', 'love-vs-lust', 'dating-age-manipulators'],
     ebooks: []
   }
 ];
 
-// Populate bundle ebooks
+// -------------------------------
+// Populate bundle.ebooks
+// -------------------------------
 bundles.forEach(bundle => {
-  bundle.ebooks = bundle.ebookIds.map(id => ebooks.find(ebook => ebook.id === id)).filter(Boolean) as EBook[];
+  bundle.ebooks = bundle.ebookIds
+    .map(id => ebooks.find(e => e.id === id))
+    // Optional: exclude "coming soon" titles from pricing
+    .filter((e): e is NonNullable<typeof e> => !!e && !e.comingSoon);
+});
+
+// -------------------------------
+// Dynamic pricing engine
+// Choose strategy: 'cheapest-free' | 'percent-off' | 'flat-off'
+// -------------------------------
+type BundlePricingMode = 'cheapest-free' | 'percent-off' | 'flat-off';
+
+const BUNDLE_PRICING_MODE: BundlePricingMode = 'cheapest-free';
+const BUNDLE_PERCENT_OFF = 0.30; // used if 'percent-off'
+const BUNDLE_FLAT_OFF = 20;      // used if 'flat-off'
+
+// pretty money
+const roundMoney = (n: number) => Math.max(0, Math.round(n));
+
+bundles.forEach(bundle => {
+  const prices = bundle.ebooks.map(e => e.price ?? 0);
+  const original = prices.reduce((a, b) => a + b, 0);
+
+  if (prices.length === 0) {
+    bundle.originalPrice = 0;
+    bundle.savings = 0;
+    bundle.price = 0;
+    return;
+  }
+
+  let savings = 0;
+  switch (BUNDLE_PRICING_MODE) {
+    case 'cheapest-free': {
+      const cheapest = Math.min(...prices);
+      savings = cheapest;
+      break;
+    }
+    case 'percent-off': {
+      savings = original * BUNDLE_PERCENT_OFF;
+      break;
+    }
+    case 'flat-off': {
+      savings = Math.min(BUNDLE_FLAT_OFF, original);
+      break;
+    }
+  }
+
+  bundle.originalPrice = roundMoney(original);
+  bundle.savings = roundMoney(savings);
+  bundle.price = roundMoney(original - savings);
 });
 
 export const activeCategories = [
   'Manipulation & Toxic Relationships',
-  'Dating & Red Flags',
   'Self Empowering'
 ];
