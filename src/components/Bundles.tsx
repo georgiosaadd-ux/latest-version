@@ -97,7 +97,7 @@ const Bundles: React.FC<BundlesProps> = ({ bundles, onAddToCart }) => {
                 {bundle.ebooks.map((ebook) => (
                   <li key={ebook.id} className="text-sm text-gray-700 flex items-start gap-2">
                     <span className="font-bold" style={{ color: 'hsl(333, 65%, 59%)' }}>•</span>
-                    <span className="font-medium">{ebook.title}</span>
+                     <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">{ebook.title}</span>
                   </li>
                 ))}
               </ul>
@@ -110,14 +110,16 @@ const Bundles: React.FC<BundlesProps> = ({ bundles, onAddToCart }) => {
                   {formatCurrency(bundle.originalPrice)}
                 </span>
                 <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-3 py-1 rounded-full text-xs font-bold">
-                  Save {formatCurrency(bundle.savings)}
+                  Save {formatCurrency(bundle.savings)}, Get 1 FREE!
                 </span>
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
+                 <div className="text-5xl md:text-6xl font-extrabold mb-3">
+                <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
                 {formatCurrency(bundle.price)}
+                </span>
               </div>
               <p className="text-sm text-gray-600">
-                That's only {formatCurrency(Math.round(bundle.price / bundle.ebooks.length))} per book!
+                That's only <span className="font-bold text-pink-600"> {formatCurrency(Math.round(bundle.price / bundle.ebooks.length))} per book! </span>
               </p>
             </div>
             
