@@ -294,12 +294,10 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
           })}
         </div>
 
-        {/* Summary Bar - Fixed at bottom on mobile when scrolling */}
+        {/* Summary Bar - Appears after first selection */}
         {selectedBooks.length > 0 && (
           <div className={`bg-white rounded-2xl shadow-xl border-2 border-[hsl(333,65%,59%)] transition-all duration-300 ${
             isSticky ? 'lg:fixed lg:bottom-4 lg:left-4 lg:right-4 lg:z-40 lg:max-w-4xl lg:mx-auto' : ''
-          } ${
-            isPanelCollapsed ? '' : ''
           }`}>
             
             {/* Mobile Drag Handle */}
