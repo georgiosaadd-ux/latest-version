@@ -6,34 +6,38 @@ interface PainStripProps {
 
 const PainStrip: React.FC<PainStripProps> = ({ onCategoryClick = () => {} }) => {
   const scenarios = [
+        {
+      story: " He disappears the moment you start to feel safe.",
+      highlight: "Learn why they only love the chase"
+    },
+
+      {
+      story: " He wants physical things fast, but avoids talking about feelings.",
+      highlight: "Learn the difference between LOVE and LUST"
+    },
+    
+  {
+      story: " See how modern dating in the social media era sells illusions, not intimacy and keeps you chasing what’s fake.",
+      highlight: "See through modern manipulation"
+    },
+
+     {
+      story: " He says he’s not ready for a relationship, but never stops flirting with you.",
+      highlight: "Learn how they manipulate, and understand thei mixed signals."
+    },
+
+    
     {
-      story: "He gives you all his time, all his attention, calling, texting, making you feel chosen. Then just like that, he disappears for days, leaving you broken and addicted to his return.",
+      story: " He gives you all his time, all his attention. Then just like that, he disappears for days, leaving you broken and addicted to his return.",
       highlight: "Learn the toxic push–pull cycle"
     },
     {
-      story: "You catch him lying, the messages, the late nights, the inconsistencies. But somehow he spins it around and makes you feel guilty for even asking questions.",
-      highlight: "Discover how manipulators flip the blame"
-    },
-    {
-      story: "He makes you feel crazy for remembering things exactly as they happened, and somehow you're apologizing for something he did. That's manipulation.",
+      story: " You apologize for things he did.",
       highlight: "See how gaslighting really works"
-    },
-    {
-      story: "He swears he wants a future with you, but months turn into years… and you're still waiting for a ring, still waiting for commitment, still waiting for him to choose you.",
-      highlight: "Stop wasting your best years on empty promises"
-    },
-    {
-      story: "Every man looks different, but the stories feel the same. The same games, the same red flags, the same heartbreak… and you're starting to wonder if it's you.",
-      highlight: "Break the cycle once and for all"
-    },
-    {
-      story: "You say yes when you mean no, give until you're empty, and wonder why you feel invisible. Your kindness has become your cage, and you're tired of breaking yourself for others.",
-      highlight: "Learn the power of saying no and protecting your peace"
-    },
-    {
-      story: "You scroll through her perfect life and feel like you're failing at yours. The comparison never ends, and neither does the feeling that you're just not enough.",
-      highlight: "Stop comparing and start celebrating your unique journey"
     }
+
+  
+  
   ];
 
   const scrollToEbooks = () => {
