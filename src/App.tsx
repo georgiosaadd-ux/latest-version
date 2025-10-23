@@ -59,8 +59,8 @@ function App() {
     addToCart(item.item || item, source);
   };
 
-  const handleCheckout = async (form: CheckoutForm) => {
-    const total = getDiscountedTotal();
+const handleCheckout = async (form: CheckoutForm) => {
+    const { total } = getCartSummary();
 
     trackBeginCheckout(cart, total);
 
