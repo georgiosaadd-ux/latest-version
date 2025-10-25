@@ -1,3 +1,5 @@
+// products.ts
+
 import datingAgeManipulatorsImage from '../assets/images/Dating-in-the-Age-of-Manipulators.png';
 import trappedInHisGameImage from '../assets/images/Trapped-in-his-game.png';
 import gaslightingUnmaskedImage from '../assets/images/Gaslighting-Unmasked.png';
@@ -7,17 +9,21 @@ import mrAlmostImage from '../assets/images/Mr-Almost.png';
 import loveVsLustImage from '../assets/images/Love-vs-Lust.png';
 import charmerTrapImage from '../assets/images/The-Charmer-Trap.png';
 
-// Placeholder images for Self Empowering category - replace with actual covers
-const silentGirlSyndromeImage = 'https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=400';
-const girlNeverFeltEnoughImage = 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400';
-const tooKindToSurviveImage = 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400';
-const comparisonTrapImage = 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400';
-
 import { EBook, Bundle } from '../types';
+
+// Placeholder images for Self Empowering category (replace with real covers)
+const silentGirlSyndromeImage =
+  'https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=400';
+const girlNeverFeltEnoughImage =
+  'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400';
+const tooKindToSurviveImage =
+  'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400';
+const comparisonTrapImage =
+  'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400';
 
 export const ebooks: EBook[] = [
   // =========================
-  // Manipulation & Toxic Relationships
+  // Manipulation & Toxic Relationships (LIVE)
   // =========================
   {
     id: 'dating-age-manipulators',
@@ -25,6 +31,8 @@ export const ebooks: EBook[] = [
     subtitle: 'Red Flags You Cannot Ignore',
     category: 'Manipulation & Toxic Relationships',
     price: 42,
+    rating: 5.0,
+    reviewCount: 675,
     description: 'Navigate modern dating with confidence and clarity.',
     badges: ['Best Seller', 'Reader Favorite'],
     takeaways: [
@@ -44,6 +52,8 @@ export const ebooks: EBook[] = [
     subtitle: 'Spotting Manipulation Before It Destroys You',
     category: 'Manipulation & Toxic Relationships',
     price: 42,
+    rating: 5.0,
+    reviewCount: 433,
     description: 'See the patterns, protect your peace.',
     badges: [],
     takeaways: [
@@ -63,6 +73,8 @@ export const ebooks: EBook[] = [
     subtitle: 'Chemistry Without Blindness',
     category: 'Manipulation & Toxic Relationships',
     price: 34,
+    rating: 5.0,
+    reviewCount: 406,
     description: 'Tell obsession from connection. Choose what actually loves you back.',
     badges: [],
     takeaways: [
@@ -82,8 +94,10 @@ export const ebooks: EBook[] = [
     subtitle: 'Break the Cycle of Emotional Highs and Crashes',
     category: 'Manipulation & Toxic Relationships',
     price: 39,
+    rating: 5.0,
+    reviewCount: 325,
     description: 'Stop getting swept up in intensity that ends in silence.',
-    badges: ['Best Seller'],
+    badges: [],
     takeaways: [
       'Decode love-bombing vs. real intimacy',
       'Avoid the attention-withdrawal trap',
@@ -95,12 +109,14 @@ export const ebooks: EBook[] = [
     pages: 76,
     audioMinutes: 20
   },
-{
+  {
     id: 'gaslighting-unmasked',
     title: 'Gaslighting Unmasked',
     subtitle: 'Reclaim Your Reality',
     category: 'Manipulation & Toxic Relationships',
     price: 14,
+    rating: 5,
+    reviewCount: 250,
     description: 'End the confusion, reclaim your reality.',
     badges: [],
     takeaways: [
@@ -117,9 +133,11 @@ export const ebooks: EBook[] = [
   {
     id: 'mr-almost',
     title: 'Mr. Almost',
-    subtitle: 'Stop Waiting for Someone Who Won\'t Choose You',
+    subtitle: "Stop Waiting for Someone Who Won't Choose You",
     category: 'Manipulation & Toxic Relationships',
     price: 15,
+    rating: 4.9,
+    reviewCount: 174,
     description: 'Stop waiting for someone who will not choose you.',
     badges: [],
     takeaways: [
@@ -133,13 +151,14 @@ export const ebooks: EBook[] = [
     pages: 64,
     audioMinutes: 17
   },
-
   {
     id: 'why-attract-toxic',
     title: 'Why Do I Attract Toxic Men?',
     subtitle: 'Breaking Harmful Patterns',
     category: 'Manipulation & Toxic Relationships',
     price: 15,
+    rating: 5.0,
+    reviewCount: 342,
     description: 'Stop the pattern that keeps hurting you.',
     badges: [],
     takeaways: [
@@ -153,8 +172,9 @@ export const ebooks: EBook[] = [
     pages: 58,
     audioMinutes: 16
   },
+
   // =========================
-  // Self Empowering
+  // Self Empowering (COMING SOON — not selectable for bundles)
   // =========================
   {
     id: 'silent-girl-syndrome',
@@ -176,8 +196,6 @@ export const ebooks: EBook[] = [
     pages: 70,
     audioMinutes: 19
   },
-
-  
   {
     id: 'girl-never-felt-enough',
     title: 'The Girl Who Never Felt Enough',
@@ -205,7 +223,8 @@ export const ebooks: EBook[] = [
     category: 'Self Empowering',
     price: 40,
     comingSoon: true,
-    description: 'I Broke Myself to Please Others, Until I Learned the Power of No',
+    description:
+      'I Broke Myself to Please Others, Until I Learned the Power of No',
     badges: [],
     takeaways: [
       'Learn to say no without guilt or explanation',
@@ -240,12 +259,27 @@ export const ebooks: EBook[] = [
   }
 ];
 
+// ------------------------------------------------------
+// Helper exports
+// ------------------------------------------------------
+
+// Live-only list you should pass into <CustomBundle /> to exclude drafts
+export const ebooksSelectable: EBook[] = ebooks.filter(e => !e.comingSoon);
+
+// Categories you surface on the site
+export const activeCategories = [
+  'Manipulation & Toxic Relationships',
+  'Self Empowering'
+];
+
+// ------------------------------------------------------
+// Predefined bundles (populate with LIVE ebooks only)
+// ------------------------------------------------------
 export const bundles: Bundle[] = [
   {
     id: 'manipulation-recovery',
     title: 'Manipulation Recovery Bundle',
     description: 'Complete toolkit for recognizing and recovering from manipulation',
-    // prices will be computed dynamically below
     price: 0,
     originalPrice: 0,
     savings: 0,
@@ -255,20 +289,17 @@ export const bundles: Bundle[] = [
   }
 ];
 
-// -------------------------------
-// Populate bundle.ebooks
-// -------------------------------
+// Populate bundle.ebooks with LIVE books only
 bundles.forEach(bundle => {
   bundle.ebooks = bundle.ebookIds
     .map(id => ebooks.find(e => e.id === id))
-    // Optional: exclude "coming soon" titles from pricing
     .filter((e): e is NonNullable<typeof e> => !!e && !e.comingSoon);
 });
 
-// -------------------------------
+// ------------------------------------------------------
 // Dynamic pricing engine
-// Choose strategy: 'cheapest-free' | 'percent-off' | 'flat-off'
-// -------------------------------
+// Strategy: 'cheapest-free' | 'percent-off' | 'flat-off'
+// ------------------------------------------------------
 type BundlePricingMode = 'cheapest-free' | 'percent-off' | 'flat-off';
 
 const BUNDLE_PRICING_MODE: BundlePricingMode = 'cheapest-free';
@@ -310,8 +341,3 @@ bundles.forEach(bundle => {
   bundle.savings = roundMoney(savings);
   bundle.price = roundMoney(original - savings);
 });
-
-export const activeCategories = [
-  'Manipulation & Toxic Relationships',
-  'Self Empowering'
-];

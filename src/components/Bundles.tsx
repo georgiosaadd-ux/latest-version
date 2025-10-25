@@ -47,7 +47,7 @@ const Bundles: React.FC<BundlesProps> = ({ bundles, onAddToCart }) => {
               className="flex-1 border-2 border-[#D8558E] text-[#D8558E] px-8 py-4 rounded-2xl text-lg font-bold cursor-default flex items-center justify-center gap-2"
               disabled
             >
-              See the Most Picked Bundles ↓
+              See the Most Picked Bundle ↓
             </button>
             <button
               onClick={() => {
@@ -56,7 +56,7 @@ const Bundles: React.FC<BundlesProps> = ({ bundles, onAddToCart }) => {
                   element.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
-              className="flex-1 bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-8 py-4 rounded-2xl text-lg font-bold hover:shadow-xl transition-all transform hover:-translate-y-1"
+              className="flex-1 bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-8 py-4 rounded-2xl text-lg font-bold hover:shadow-xl transition-all transform hover:-translate-y-1 animate-attention-wiggle"
             >
               Customize Your Bundle →
             </button>
@@ -97,7 +97,7 @@ const Bundles: React.FC<BundlesProps> = ({ bundles, onAddToCart }) => {
                 {bundle.ebooks.map((ebook) => (
                   <li key={ebook.id} className="text-sm text-gray-700 flex items-start gap-2">
                     <span className="font-bold" style={{ color: 'hsl(333, 65%, 59%)' }}>•</span>
-                     <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">{ebook.title}</span>
+                    <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">{ebook.title}</span>
                   </li>
                 ))}
               </ul>
@@ -113,9 +113,9 @@ const Bundles: React.FC<BundlesProps> = ({ bundles, onAddToCart }) => {
                   Save {formatCurrency(bundle.savings)}, Get 1 FREE!
                 </span>
               </div>
-                 <div className="text-5xl md:text-6xl font-extrabold mb-3">
+              <div className="text-5xl md:text-6xl font-extrabold mb-3">
                 <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
-                {formatCurrency(bundle.price)}
+                  {formatCurrency(bundle.price)}
                 </span>
               </div>
               <p className="text-sm text-gray-600">
@@ -131,6 +131,21 @@ const Bundles: React.FC<BundlesProps> = ({ bundles, onAddToCart }) => {
               <ShoppingCart size={20} />
               Add Bundle to Cart
             </button>
+
+            {/* Customize button (mobile compact) */}
+            <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 max-w-2xl mx-auto">
+              <button
+                onClick={() => {
+                  const element = document.getElementById('custom-bundle');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="flex-1 border-2 border-[#D8558E] text-[#D8558E] px-8 py-4 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 hover:shadow-xl transition-all transform hover:-translate-y-1 animate-attention-wiggle"
+              >
+                Customize Your Bundle ↓
+              </button>
+            </div>
           </div>
         </div>
 
@@ -266,6 +281,32 @@ const Bundles: React.FC<BundlesProps> = ({ bundles, onAddToCart }) => {
           </p>
         </div>
       </div>
+
+      {/* Animations */}
+      <style>{`
+        /* Whole-button attention wiggle: small jump + quick shake + pause */
+        @keyframes attention-wiggle {
+          0%, 60%, 100% { transform: translateY(0) rotate(0); }
+          8%  { transform: translateY(-4px) rotate(-1deg); }
+          14% { transform: translateY(-8px) rotate(1deg); }
+          20% { transform: translateY(-9px) rotate(-1deg); }
+          26% { transform: translateY(-8px) rotate(1deg); }
+          32% { transform: translateY(-5px) rotate(-1deg); }
+          40% { transform: translateY(-2px) rotate(0deg); }
+          /* 60%–100% = rest to avoid fatigue */
+        }
+        .animate-attention-wiggle {
+          animation: attention-wiggle 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+          will-change: transform;
+        }
+
+        /* Respect user motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+          .animate-attention-wiggle {
+            animation: none !important;
+          }
+        }
+      `}</style>
     </section>
   );
 };

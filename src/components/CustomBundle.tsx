@@ -1,15 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Check, X, Info, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import {
+  ShoppingCart,
+  Check,
+  X,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  BookOpen,
+  Volume2,
+  Star,
+} from 'lucide-react';
 import { EBook, CartItem } from '../types';
 import { trackEvent } from '../utils/analytics';
 import { formatCurrency } from '../utils/currency';
+import PreviewModal from './PreviewModal';
 
 interface CustomBundleProps {
   ebooks: EBook[];
   onAddToCart: (item: CartItem) => void;
 }
 
-// === helpers ===
+/* ========== Helpers ========== */
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -29,27 +41,58 @@ const announceToScreenReader = (message: string) => {
   el.className = 'sr-only';
   el.textContent = message;
   document.body.appendChild(el);
-  setTimeout(() => { document.body.removeChild(el); }, 1000);
+  setTimeout(() => {
+    document.body.removeChild(el);
+  }, 1000);
 };
 
+/** Compact star rating (mirrors EbookGrid styling) */
+const StarRating: React.FC<{ rating: number; reviewCount?: number; compact?: boolean }> = ({
+  rating,
+  reviewCount,
+  compact,
+}) => {
+  return (
+    <div className={`flex items-center gap-2 ${compact ? '' : 'mb-3'}`}>
+      <div className="flex items-center gap-0.5">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            size={compact ? 14 : 16}
+            className={i < Math.floor(rating) ? 'text-[hsl(333,65%,59%)] fill-[hsl(333,65%,59%)]' : 'text-gray-300'}
+          />
+        ))}
+      </div>
+      <span className={`font-semibold text-gray-700 ${compact ? 'text-xs' : 'text-sm'}`}>{rating.toFixed(1)}</span>
+      {reviewCount ? (
+        <span className={`${compact ? 'text-[10px]' : 'text-xs'} text-gray-500`}>({reviewCount})</span>
+      ) : null}
+    </div>
+  );
+};
+
+/* ========== Component ========== */
 const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
   const [selectedBooks, setSelectedBooks] = useState<EBook[]>([]);
   const [isSticky, setIsSticky] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [previewEbook, setPreviewEbook] = useState<EBook | null>(null);
 
   const isMobile = useIsMobile();
 
-  // MOBILE SHEET STATES
-  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);       // expanded sheet
-  const [isMobileSheetCollapsed, setIsMobileSheetCollapsed] = useState(false); // bottom dock
+  // Live books only
+  const availableBooks = React.useMemo(() => ebooks.filter((e) => !(e as any).comingSoon), [ebooks]);
+
+  // Mobile sheet
+  const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  const [isMobileSheetCollapsed, setIsMobileSheetCollapsed] = useState(false);
   const dragStartY = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
   const lastMoveTs = useRef<number>(0);
   const lastMoveY = useRef<number>(0);
 
-  // adjust if your bottom nav/badge is taller/shorter
   const BOTTOM_BAR_HEIGHT = 76;
 
   const openMobileSheet = () => {
@@ -70,7 +113,7 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
     dragStartY.current = null;
   };
 
-  // Sticky on desktop
+  // Sticky panel logic
   useEffect(() => {
     const handleScroll = () => {
       const section = document.getElementById('custom-bundle');
@@ -83,26 +126,22 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
   }, []);
 
   const toggleBook = (book: EBook) => {
-    setSelectedBooks(prev => {
-      const exists = prev.find(b => b.id === book.id);
+    if ((book as any).comingSoon) return;
+    setSelectedBooks((prev) => {
+      const exists = prev.find((b) => b.id === book.id);
       let next: EBook[];
-
       if (exists) {
-        next = prev.filter(b => b.id !== book.id);
-        // if user unselects to zero, hide mobile UI
+        next = prev.filter((b) => b.id !== book.id);
         if (next.length === 0) {
           fullyHideMobileUI();
         }
       } else {
         next = [...prev, book];
-
         if (next.length > 0 && next.length % 3 === 0) {
           setToastMessage('🎉 You unlocked 1 FREE book!');
           setShowToast(true);
           setTimeout(() => setShowToast(false), 3000);
         }
-
-        // auto open sheet on first add
         if (isMobile) openMobileSheet();
       }
       return next;
@@ -111,8 +150,8 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
 
   const removeBookFromSheet = (book: EBook) => {
     trackEvent('bundle_item_removed', { id: book.id, title: book.title, source: 'sheet' });
-    setSelectedBooks(prev => {
-      const next = prev.filter(b => b.id !== book.id);
+    setSelectedBooks((prev) => {
+      const next = prev.filter((b) => b.id !== book.id);
       announceToScreenReader(`Removed ${book.title}. ${next.length} selected.`);
       if (next.length === 0) {
         fullyHideMobileUI();
@@ -131,11 +170,14 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
   const togglePanelCollapse = () => {
     const s = !isPanelCollapsed;
     setIsPanelCollapsed(s);
-    trackEvent('bundle_panel_toggled', { action: s ? 'collapsed' : 'expanded', selected_count: selectedBooks.length });
+    trackEvent('bundle_panel_toggled', {
+      action: s ? 'collapsed' : 'expanded',
+      selected_count: selectedBooks.length,
+    });
     announceToScreenReader(`Bundle panel ${s ? 'collapsed' : 'expanded'}.`);
   };
 
-  const isSelected = (book: EBook) => selectedBooks.find(b => b.id === book.id);
+  const isSelected = (book: EBook) => selectedBooks.find((b) => b.id === book.id);
 
   // Pricing
   const totalSelected = selectedBooks.length;
@@ -154,20 +196,24 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
     if (selectedBooks.length < 3) return;
 
     trackEvent('bundle_custom_created', {
-      selected_books: selectedBooks.map(b => ({ id: b.id, title: b.title, price: b.price })),
-      total_selected: totalSelected, free_count: freeCount, subtotal, discount, total
+      selected_books: selectedBooks.map((b) => ({ id: b.id, title: b.title, price: b.price })),
+      total_selected: totalSelected,
+      free_count: freeCount,
+      subtotal,
+      discount,
+      total,
     });
 
     const customBundle = {
       id: `custom-bundle-${Date.now()}`,
       title: `Custom Bundle (${totalSelected} books)`,
-      description: `Your personalized selection: ${selectedBooks.map(b => b.title).join(', ')}`,
+      description: `Your personalized selection: ${selectedBooks.map((b) => b.title).join(', ')}`,
       price: total,
       originalPrice: subtotal,
       savings: discount,
-      ebookIds: selectedBooks.map(b => b.id),
+      ebookIds: selectedBooks.map((b) => b.id),
       ebooks: selectedBooks,
-      freeCount
+      freeCount,
     };
 
     const cartItem = {
@@ -176,9 +222,12 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
       item: customBundle,
       quantity: 1,
       metadata: {
-        subtotal, discount, freeCount, pricingMode: 'bundle_pre_discounted' as const,
-        originalItems: selectedBooks.map(b => ({ title: b.title, price: b.price }))
-      }
+        subtotal,
+        discount,
+        freeCount,
+        pricingMode: 'bundle_pre_discounted' as const,
+        originalItems: selectedBooks.map((b) => ({ title: b.title, price: b.price })),
+      },
     };
 
     onAddToCart(cartItem);
@@ -186,7 +235,7 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
     if (isMobile) fullyHideMobileUI();
   };
 
-  // === Mobile sheet drag handlers ===
+  // Mobile drag handlers
   const onSheetTouchStart = (e: React.TouchEvent) => {
     dragStartY.current = e.touches[0].clientY;
     lastMoveY.current = dragStartY.current;
@@ -204,8 +253,7 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
   };
   const onSheetTouchEnd = () => {
     const dt = Math.max(1, performance.now() - lastMoveTs.current);
-    const v = (lastMoveY.current - (dragStartY.current ?? lastMoveY.current)) / dt; // px/ms
-    // collapse (not vanish) on sufficient pull or flick
+    const v = (lastMoveY.current - (dragStartY.current ?? lastMoveY.current)) / dt;
     if (dragY > 120 || v > 0.8) {
       collapseMobileSheet();
     } else {
@@ -223,22 +271,40 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
             </span>
           </h2>
           <p className="text-2xl md:text-3xl text-gray-700 font-medium mb-4">Your Story, Your Choice</p>
-          <p className="text-xl text-gray-600 mb-2">Pick any 3 or more eBooks from all categories and you'll always get one free.</p>
-          <p className="text-lg text-gray-500">Every 3 you pick unlocks 1 free — Mix & match as you like!</p>
+          <p className="text-xl text-gray-600 mb-2">
+            Pick any 3 or more eBooks from all categories and you'll always get one free.
+          </p>
         </div>
 
         {/* Desktop Live Counter */}
         <div className="hidden md:block max-w-md mx-auto mb-8 bg-white rounded-2xl shadow-lg p-6 border-2 border-purple-100">
           <div className="grid grid-cols-3 gap-4 text-center mb-4">
-            <div><div className="text-2xl font-bold text-gray-800">{totalSelected}</div><div className="text-sm text-gray-600">Selected</div></div>
-            <div><div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-1">{freeCount}<Info size={16} className="text-gray-400" /></div><div className="text-sm text-gray-600">Free books</div></div>
-            <div><div className="text-2xl font-bold text-[#D8558E]">{formatCurrency(discount)}</div><div className="text-sm text-gray-600">You save</div></div>
+            <div>
+              <div className="text-2xl font-bold text-gray-800">{totalSelected}</div>
+              <div className="text-sm text-gray-600">Selected</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-1">
+                {freeCount}
+                <Info size={16} className="text-gray-400" />
+              </div>
+              <div className="text-sm text-gray-600">Free books</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[#D8558E]">{formatCurrency(discount)}</div>
+              <div className="text-sm text-gray-600">You save</div>
+            </div>
           </div>
+
           {selectedBooks.length > 0 && (
             <div className="pt-4 border-t border-gray-200">
-              <div className="flex justify-center gap-6 text-sm text-gray-600">
-                <div className="flex items-center gap-1"><span>📄</span><span>Total pages (approx): <strong>{totalPages}</strong></span></div>
-                <div className="flex items-center gap-1"><span>🔊</span><span>Total audio: <strong>{totalAudioMinutes} min</strong></span></div>
+              <div className="flex justify-center gap-2 flex-wrap">
+                <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                  <BookOpen size={14} /> {totalPages}+ Pages
+                </span>
+                <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                  <Volume2 size={14} /> {totalAudioMinutes}+ Minute Voice Summary
+                </span>
               </div>
             </div>
           )}
@@ -253,49 +319,90 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
           </div>
         )}
 
-        {/* Grid of books */}
+        {/* Grid of books — LIVE ONLY */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          {ebooks.map((book) => {
+          {availableBooks.map((book) => {
             const selected = isSelected(book);
             return (
               <div
                 key={book.id}
-                className={`relative bg-white rounded-2xl shadow-lg transition-all duration-300 cursor-pointer ${
-                  selected ? 'ring-4 ring-[hsl(333,65%,59%)] shadow-xl transform scale-105' : 'hover:shadow-xl hover:transform hover:-translate-y-1'
+                className={`relative bg-white rounded-2xl shadow-lg transition-all duration-300 cursor-pointer h-full flex flex-col ${
+                  selected
+                    ? 'ring-4 ring-[hsl(333,65%,59%)] shadow-xl transform scale-105'
+                    : 'hover:shadow-xl hover:transform hover:-translate-y-1'
                 }`}
                 onClick={() => toggleBook(book)}
               >
-                <div className={`absolute top-4 right-4 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all z-10 ${
-                  selected ? 'bg-[hsl(333,65%,59%)] border-[hsl(333,65%,59%)] text-white' : 'border-gray-300 bg-white'
-                }`}>
+                {/* Select tick */}
+                <div
+                  className={`absolute top-4 right-4 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all z-10 ${
+                    selected ? 'bg-[hsl(333,65%,59%)] border-[hsl(333,65%,59%)] text-white' : 'border-gray-300 bg-white'
+                  }`}
+                >
                   {selected && <Check size={16} />}
                 </div>
 
+                {/* Cover */}
                 <div className="relative h-40 overflow-hidden rounded-t-2xl">
                   <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+
+                  {/* Best Seller (or first badge) ON THE COVER */}
+                  {book.badges?.length > 0 && (
+                    <div className="absolute top-3 left-3">
+                      <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                        {book.badges[0]}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Preview on cover */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewEbook(book);
+                    }}
+                    className="absolute bottom-3 left-3 bg-white/90 hover:bg-white text-[hsl(333,65%,59%)] px-3 py-1.5 rounded-full text-xs font-semibold shadow-md flex items-center gap-1"
+                    aria-label={`Preview ${book.title}`}
+                  >
+                    Preview <ExternalLink size={12} />
+                  </button>
                 </div>
 
-                <div className="p-4">
-                  <h4 className="font-heading text-lg font-bold mb-2">
+                {/* Body */}
+                <div className="p-4 flex-1 flex flex-col">
+                  <h4 className="font-heading text-lg font-bold mb-1">
                     <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
                       {book.title}
                     </span>
                   </h4>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{book.description}</p>
 
-                  <div className="flex items-center gap-4 mb-3 text-sm text-gray-500">
-                    <div className="flex items-center gap-1"><span>📄</span><span>{book.pages}+ pages</span></div>
-                    <div className="flex items-center gap-1"><span>🔊</span><span>{book.audioMinutes}+ min voice</span></div>
-                  </div>
+                  {/* Ratings (compact) */}
+                  {typeof (book as any).rating === 'number' && (
+                    <div className="mb-1">
+                      <StarRating
+                        rating={(book as any).rating}
+                        reviewCount={(book as any).reviewCount}
+                        compact
+                      />
+                    </div>
+                  )}
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-gray-900">{formatCurrency(book.price)}</span>
-                    {book.badges.length > 0 && (
-                      <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-2 py-1 rounded-full text-xs font-semibold">
-                        {book.badges[0]}
+                  {/* Keep steady height for alignment */}
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2 min-h-[40px]">{book.description}</p>
+
+                  {/* Footer pinned to bottom: badges + price on one baseline */}
+                  <div className="mt-auto pt-2 flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-2 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1">
+                        <BookOpen size={12} /> {book.pages}+ Pages
                       </span>
-                    )}
+                      <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-2 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1">
+                        <Volume2 size={12} /> {book.audioMinutes}+ Min Voice
+                      </span>
+                    </div>
+
+                    <span className="text-xl font-bold text-gray-900 ml-3 shrink-0">{formatCurrency(book.price)}</span>
                   </div>
                 </div>
               </div>
@@ -308,9 +415,16 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
           <>
             {/* Desktop inline/sticky */}
             {!isMobile && (
-              <div className={`bg-white rounded-2xl shadow-xl border-2 border-[hsl(333,65%,59%)] transition-all duration-300 ${isSticky ? 'fixed bottom-4 left-4 right-4 z-40 max-w-4xl mx-auto' : ''} ${isPanelCollapsed ? 'lg:p-6' : 'p-6'}`}>
+              <div
+                className={`bg-white rounded-2xl shadow-xl border-2 border-[hsl(333,65%,59%)] transition-all duration-300 ${
+                  isSticky ? 'fixed bottom-4 left-4 right-4 z-40 max-w-4xl mx-auto' : ''
+                } ${isPanelCollapsed ? 'lg:p-6' : 'p-6'}`}
+              >
                 <div className="hidden lg:flex justify-end -mt-2 -mr-2">
-                  <button onClick={togglePanelCollapse} className="w-8 h-8 rounded-full text-gray-400 hover:text-gray-600 flex items-center justify-center">
+                  <button
+                    onClick={togglePanelCollapse}
+                    className="w-8 h-8 rounded-full text-gray-400 hover:text-gray-600 flex items-center justify-center"
+                  >
                     <ChevronDown size={18} className={isPanelCollapsed ? '' : 'rotate-180 transition-transform'} />
                   </button>
                 </div>
@@ -322,12 +436,25 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
                         Your Custom Bundle ({selectedBooks.length} books)
                       </span>
                     </h4>
+
                     <div className="mb-4">
-                      <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto overscroll-contain" style={{ scrollbarWidth: 'thin' }}>
+                      <div
+                        className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto overscroll-contain"
+                        style={{ scrollbarWidth: 'thin' }}
+                      >
                         {selectedBooks.map((book) => (
-                          <div key={book.id} className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 flex-shrink-0">
+                          <div
+                            key={book.id}
+                            className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 flex-shrink-0"
+                          >
                             <span className="text-sm font-medium">{book.title}</span>
-                            <button onClick={(e) => { e.stopPropagation(); toggleBook(book); }} className="text-gray-500 hover:text-red-500 transition-colors">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleBook(book);
+                              }}
+                              className="text-gray-500 hover:text-red-500 transition-colors"
+                            >
                               <X size={14} />
                             </button>
                           </div>
@@ -335,23 +462,37 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
                       </div>
                     </div>
 
-                    <div className="flex justify-center gap-6 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center gap-1"><span>📄</span><span>Total pages (approx): <strong>{totalPages}</strong></span></div>
-                      <div className="flex items-center gap-1"><span>🔊</span><span>Total audio: <strong>{totalAudioMinutes} min</strong></span></div>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                        <BookOpen size={14} /> {totalPages}+ Pages
+                      </span>
+                      <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                        <Volume2 size={14} /> {totalAudioMinutes}+ Minute Voice Summary
+                      </span>
                     </div>
                   </div>
 
                   <div className="text-center lg:text-right min-w-[200px] w-full lg:w-auto">
                     <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-gray-600"><span>Subtotal:</span><span>{formatCurrency(subtotal)}</span></div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Subtotal:</span>
+                        <span>{formatCurrency(subtotal)}</span>
+                      </div>
                       {freeCount > 0 && (
                         <>
-                          <div className="flex justify-between text-green-600 font-medium"><span>Free books applied:</span><span className="font-bold">{freeCount}</span></div>
-                          <div className="flex justify-between text-[#D8558E] font-medium"><span>Saved you:</span><span className="font-bold">{formatCurrency(discount)}</span></div>
+                          <div className="flex justify-between text-green-600 font-medium">
+                            <span>Free books applied:</span>
+                            <span className="font-bold">{freeCount}</span>
+                          </div>
+                          <div className="flex justify-between text-[#D8558E] font-medium">
+                            <span>Saved you:</span>
+                            <span className="font-bold">{formatCurrency(discount)}</span>
+                          </div>
                         </>
                       )}
                       <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t border-gray-200">
-                        <span>Bundle total:</span><span>{formatCurrency(total)}</span>
+                        <span>Bundle total:</span>
+                        <span>{formatCurrency(total)}</span>
                       </div>
                     </div>
 
@@ -367,8 +508,9 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
                       <ShoppingCart size={20} />
                       Add Custom Bundle to Cart
                     </button>
-
-                    {selectedBooks.length < 3 && <p className="text-sm text-gray-500 mt-2">Pick 3+ to unlock 1 free.</p>}
+                    {selectedBooks.length < 3 && (
+                      <p className="text-sm text-gray-500 mt-2">Pick 3+ to unlock 1 free.</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -387,7 +529,7 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
                   onTouchEnd={onSheetTouchEnd}
                   style={{
                     transform: `translateY(${dragY}px)`,
-                    transition: dragY ? 'none' : 'transform 200ms cubic-bezier(.2,.8,.2,1)'
+                    transition: dragY ? 'none' : 'transform 200ms cubic-bezier(.2,.8,.2,1)',
                   }}
                 >
                   <div className="pt-3 pb-2">
@@ -397,10 +539,25 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
                   <div className="px-5 pb-2 flex items-center justify-between">
                     <div className="text-xs text-gray-700">
                       <span className="font-medium">Selected:</span> {selectedBooks.length}
-                      {freeCount > 0 && <> <span className="text-gray-400">•</span> <span className="text-green-600 font-medium">Free: {freeCount}</span></>}
-                      {discount > 0 && <> <span className="text-gray-400">•</span> <span className="text-[#D8558E] font-medium">Saved: {formatCurrency(discount)}</span></>}
+                      {freeCount > 0 && (
+                        <>
+                          {' '}
+                          <span className="text-gray-400">•</span>{' '}
+                          <span className="text-green-600 font-medium">Free: {freeCount}</span>
+                        </>
+                      )}
+                      {discount > 0 && (
+                        <>
+                          {' '}
+                          <span className="text-gray-400">•</span>{' '}
+                          <span className="text-[#D8558E] font-medium">Saved: {formatCurrency(discount)}</span>
+                        </>
+                      )}
                     </div>
-                    <button onClick={collapseMobileSheet} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center">
+                    <button
+                      onClick={collapseMobileSheet}
+                      className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center"
+                    >
                       <ChevronDown size={16} />
                     </button>
                   </div>
@@ -412,27 +569,55 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
                       </span>
                     </h4>
 
-                    <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto overscroll-contain mb-4" style={{ scrollbarWidth: 'thin' }}>
+                    <div
+                      className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto overscroll-contain mb-4"
+                      style={{ scrollbarWidth: 'thin' }}
+                    >
                       {selectedBooks.map((book) => (
                         <div key={book.id} className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 flex-shrink-0">
                           <span className="text-sm font-medium">{book.title}</span>
-                          <button onClick={(e) => { e.stopPropagation(); toggleBook(book); }} className="text-gray-500 hover:text-red-500 transition-colors">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBook(book);
+                            }}
+                            className="text-gray-500 hover:text-red-500 transition-colors"
+                          >
                             <X size={14} />
                           </button>
                         </div>
                       ))}
                     </div>
 
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                        <BookOpen size={14} /> {totalPages}+ Pages
+                      </span>
+                      <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                        <Volume2 size={14} /> {totalAudioMinutes}+ Minute Voice Summary
+                      </span>
+                    </div>
+
                     <div className="space-y-2 mb-3">
-                      <div className="flex justify-between text-gray-600"><span>Subtotal:</span><span>{formatCurrency(subtotal)}</span></div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Subtotal:</span>
+                        <span>{formatCurrency(subtotal)}</span>
+                      </div>
                       {freeCount > 0 && (
                         <>
-                          <div className="flex justify-between text-green-600 font-medium"><span>Free books applied:</span><span className="font-bold">{freeCount}</span></div>
-                          <div className="flex justify-between text-[#D8558E] font-medium"><span>Saved you:</span><span className="font-bold">{formatCurrency(discount)}</span></div>
+                          <div className="flex justify-between text-green-600 font-medium">
+                            <span>Free books applied:</span>
+                            <span className="font-bold">{freeCount}</span>
+                          </div>
+                          <div className="flex justify-between text-[#D8558E] font-medium">
+                            <span>Saved you:</span>
+                            <span className="font-bold">{formatCurrency(discount)}</span>
+                          </div>
                         </>
                       )}
                       <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t border-gray-200">
-                        <span>Bundle total:</span><span>{formatCurrency(total)}</span>
+                        <span>Bundle total:</span>
+                        <span>{formatCurrency(total)}</span>
                       </div>
                     </div>
                   </div>
@@ -463,13 +648,13 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
               </div>
             )}
 
-            {/* Mobile: COLLAPSED DOCK (always visible, pretty) */}
+            {/* Mobile: COLLAPSED DOCK */}
             {isMobile && isMobileSheetCollapsed && (
               <button
                 onClick={openMobileSheet}
                 className="fixed z-40 left-1/2 -translate-x-1/2"
                 style={{
-                  bottom: `calc(env(safe-area-inset-bottom, 0px) + ${BOTTOM_BAR_HEIGHT}px)`
+                  bottom: `calc(env(safe-area-inset-bottom, 0px) + ${BOTTOM_BAR_HEIGHT}px)`,
                 }}
                 aria-label="Expand your selection"
               >
@@ -491,7 +676,7 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
         )}
       </div>
 
-      {/* Global toast duplicate safe-layer (kept) */}
+      {/* Global toast layer */}
       {showToast && (
         <div className="fixed inset-0 pointer-events-none z-30">
           <div className="absolute top-20 right-4">
@@ -500,6 +685,17 @@ const CustomBundle: React.FC<CustomBundleProps> = ({ ebooks, onAddToCart }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Preview Modal (single ebook add allowed) */}
+      {previewEbook && (
+        <PreviewModal
+          ebook={previewEbook}
+          onClose={() => setPreviewEbook(null)}
+          onAddToCart={(ebook) => {
+            onAddToCart(ebook);
+          }}
+        />
       )}
     </section>
   );

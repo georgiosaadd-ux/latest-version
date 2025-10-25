@@ -12,8 +12,8 @@ import FeaturedEbook from './components/FeaturedEbook';
 import EbookGrid from './components/EbookGrid';
 import Bundles from './components/Bundles';
 import CustomBundle from './components/CustomBundle';
-import HowItWorks from './components/HowItWorks';
 import Testimonials from './components/Testimonials';
+import HowItWorks from './components/HowItWorks';
 import FAQ from './components/FAQ';
 import FinalCTA from './components/FinalCTA';
 import Footer from './components/Footer';
@@ -40,7 +40,7 @@ function App() {
     dismissBundleUpsell
   } = useCart();
 
-  // Refs for smooth scrolling
+  // Refs for smooth scrolling (kept if you need them later)
   const ebooksRef = useRef<HTMLElement>(null);
   const bundlesRef = useRef<HTMLElement>(null);
 
@@ -49,14 +49,22 @@ function App() {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
+  // Handy wrappers
+  const onBrowseClick = () => scrollToSection('ebooks');
+  const onBundlesClick = () => scrollToSection('bundles');
+  const onReviewsClick = () => scrollToSection('testimonials'); // <-- used by Hero stat boxes
+
   const handleAddToCart = (item: any, source: 'card' | 'modal' = 'card') => {
-    console.log('Adding to cart:', item, source);
-    
     addToCart(item.item || item, source);
+  };
+
+  const getDiscountedTotal = () => {
+    const summary = getCartSummary();
+    return summary.totalAfterDiscounts ?? summary.total;
   };
 
   const handleCheckout = async (form: CheckoutForm) => {
@@ -64,25 +72,18 @@ function App() {
 
     trackBeginCheckout(cart, total);
 
-    // Simulate payment processing
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate transaction ID
       const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Track purchase
       trackPurchase(transactionId, cart, total);
-      
-      // Simulate email sending
+
       const downloadLinks = cart.map(item => ({
         title: item.item.title,
         downloadUrl: `https://downloads.heartwise.com/${item.item.title.toLowerCase().replace(/\s+/g, '-')}.pdf`
       }));
 
       alert(`Thank you ${form.firstName}! 🎉\n\nYour purchase is complete. Check your email (${form.email}) for download links.\n\nTransaction ID: ${transactionId}`);
-      
-      // Clear cart and close
+
       clearCart();
       closeCart();
     } catch (error) {
@@ -93,38 +94,42 @@ function App() {
   return (
     <div className="min-h-screen bg-white">
       <Header cartItemCount={getCartItemCount()} onCartClick={openCart} />
-      
-      <Hero 
-        onBrowseClick={() => scrollToSection('ebooks')}
-        onBundlesClick={() => scrollToSection('bundles')}
+
+      <Hero
+        onBrowseClick={onBrowseClick}
+        onBundlesClick={onBundlesClick}
+        onReviewsClick={onReviewsClick} // <-- NEW prop wired
       />
-      
+
       <div className="transition-all duration-300 ease-out">
         <PainStrip />
       </div>
-      
+
       <FeaturedEbook ebook={featuredEbook} onAddToCart={handleAddToCart} />
-      
-      <EbookGrid 
-        ebooks={ebooks} 
+
+      <EbookGrid
+        ebooks={ebooks}
         onAddToCart={(ebook) => handleAddToCart(ebook, 'card')}
       />
-      
+
       <Bundles bundles={bundles} onAddToCart={handleAddToCart} />
-      
+
       <CustomBundle ebooks={ebooks} onAddToCart={handleAddToCart} />
-      
+
       <HowItWorks />
-      
-      <Testimonials />
-      
+
+      {/* Ensure there is a scroll target for the Hero stat boxes */}
+      <section id="testimonials">
+        <Testimonials />
+      </section>
+
       <FAQ />
-      
-      <FinalCTA 
+
+      <FinalCTA
         onShopClick={() => scrollToSection('ebooks')}
         onBundlesClick={() => scrollToSection('bundles')}
       />
-      
+
       <Footer />
 
       <Cart
@@ -146,7 +151,7 @@ function App() {
       />
 
       {/* Add padding for mobile bottom bar */}
-      <div className="h-16 md:h-0"></div>
+      <div className="h-16 md:h-0" />
     </div>
   );
 }
