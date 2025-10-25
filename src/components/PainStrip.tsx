@@ -8,7 +8,7 @@ const PainStrip: React.FC<PainStripProps> = ({ onCategoryClick = () => {} }) => 
   const scenarios = [
         {
       story: " He disappears the moment you start to feel safe.",
-      highlight: "Learn why they only love the chase"
+      highlight: "Learn why Men only love the chase"
     },
 
       {
@@ -23,7 +23,7 @@ const PainStrip: React.FC<PainStripProps> = ({ onCategoryClick = () => {} }) => 
 
      {
       story: " He says he’s not ready for a relationship, but never stops flirting with you.",
-      highlight: "Learn how they manipulate, and understand thei mixed signals."
+      highlight: "Learn how they manipulate, and understand their mixed signals."
     },
 
     
