@@ -755,6 +755,21 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
   return (
     <section id="ebooks" className="py-16 bg-gradient-to-br from-gray-50 to-pink-50">
       <div className="container mx-auto px-4">
+        {/* Audio Hook Section */}
+        <div className="text-center mb-16">
+          <h2 className="font-heading font-bold mb-6 leading-tight">
+            <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent text-2xl md:text-3xl lg:text-4xl block mb-2">
+              Every ebook come with a 
+            </span>
+            <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent text-4xl md:text-6xl lg:text-7xl">
+           Voice Summary
+            </span>
+          </h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Your day is busy, but your growth doesn't have to wait! Hear the key lessons anytime, anywhere.
+          </p>
+        </div>
+
         {/* Sticky Segmented Tabs (Mobile) */}
         <div
           className={`md:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 transition-all duration-300 ${
