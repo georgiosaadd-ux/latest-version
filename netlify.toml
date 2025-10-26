@@ -1,7 +1,6 @@
 [build]
-  command = "yarn install && yarn build"
+  command = "npm install && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
-  YARN_VERSION = "1.22.19"

@@ -61,7 +61,10 @@ export const createCheckoutSession = async (
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Configuration error. Please contact support.');
+    const missing = [];
+    if (!supabaseUrl) missing.push('VITE_SUPABASE_URL');
+    if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY');
+    throw new Error(`Missing environment variables: ${missing.join(', ')}. Please create a .env file in the latest-version folder. See SETUP_INSTRUCTIONS.md for details.`);
   }
 
   try {
