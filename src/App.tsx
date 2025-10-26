@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CheckoutForm } from './types';
 import { ebooks, bundles } from './data/products';
 import { useCart } from './hooks/useCart';
@@ -20,8 +21,10 @@ import FinalCTA from './components/FinalCTA';
 import Footer from './components/Footer';
 import Cart from './components/Cart';
 import CartToast from './components/CartToast';
+import CheckoutSuccess from './pages/CheckoutSuccess';
+import CheckoutCancel from './pages/CheckoutCancel';
 
-function App() {
+function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const {
     cart,
@@ -112,7 +115,7 @@ function App() {
       <Hero
         onBrowseClick={onBrowseClick}
         onBundlesClick={onBundlesClick}
-        onReviewsClick={onReviewsClick} // <-- NEW prop wired
+        onReviewsClick={onReviewsClick}
       />
 
       <div className="transition-all duration-300 ease-out">
@@ -167,6 +170,19 @@ function App() {
       {/* Add padding for mobile bottom bar */}
       <div className="h-16 md:h-0" />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/success" element={<CheckoutSuccess />} />
+        <Route path="/cancel" element={<CheckoutCancel />} />
+        <Route path="*" element={<HomePage />} />
+      </Routes>
+    </Router>
   );
 }
 

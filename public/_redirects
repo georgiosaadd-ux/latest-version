@@ -1,0 +1,21 @@
+# Netlify SPA redirect rules
+# Redirect all non-file requests to index.html for client-side routing
+
+# Exclude specific file types from SPA routing
+/*.js    200
+/*.css   200
+/*.json  200
+/*.png   200
+/*.jpg   200
+/*.jpeg  200
+/*.gif   200
+/*.svg   200
+/*.ico   200
+/*.woff  200
+/*.woff2 200
+/*.ttf   200
+/*.eot   200
+
+# All other routes go to index.html for React Router
+/*    /index.html   200
+

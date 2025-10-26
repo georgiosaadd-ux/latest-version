@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { XCircle, ArrowLeft, ShoppingBag } from 'lucide-react';
-import { useNavigate } from './useNavigate';
+import { useNavigate } from 'react-router-dom';
 
 const CheckoutCancel: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Auto-redirect to home after 3 seconds
+    const timer = setTimeout(() => {
+      navigate('/');
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -49,6 +58,10 @@ const CheckoutCancel: React.FC = () => {
               <ShoppingBag size={20} />
               View Cart
             </button>
+          </div>
+
+          <div className="mt-4 text-sm text-gray-500">
+            Redirecting automatically in 3 seconds...
           </div>
 
           <div className="mt-8 pt-8 border-t border-gray-200">
