@@ -3,6 +3,7 @@ import { CheckoutForm } from './types';
 import { ebooks, bundles } from './data/products';
 import { useCart } from './hooks/useCart';
 import { trackPurchase, trackBeginCheckout } from './utils/analytics';
+import { createCheckoutSession } from './utils/stripe';
 
 // Components
 import Header from './components/Header';
@@ -73,21 +74,34 @@ function App() {
     trackBeginCheckout(cart, total);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      trackPurchase(transactionId, cart, total);
+      // Prepare the checkout session request
+      const checkoutRequest = {
+        items: cart,
+        customer: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          marketingConsent: form.marketingConsent,
+        },
+        successUrl: `${window.location.origin}/success`,
+        cancelUrl: `${window.location.origin}/cancel`,
+      };
 
-      const downloadLinks = cart.map(item => ({
-        title: item.item.title,
-        downloadUrl: `https://downloads.heartwise.com/${item.item.title.toLowerCase().replace(/\s+/g, '-')}.pdf`
-      }));
+      console.log('Creating checkout session with:', checkoutRequest);
 
-      alert(`Thank you ${form.firstName}! 🎉\n\nYour purchase is complete. Check your email (${form.email}) for download links.\n\nTransaction ID: ${transactionId}`);
+      // Call the Supabase Edge Function
+      const session = await createCheckoutSession(checkoutRequest);
 
-      clearCart();
-      closeCart();
+      // Redirect to Stripe Checkout
+      if (session.url) {
+        window.location.href = session.url;
+      } else {
+        throw new Error('No checkout URL received from server');
+      }
     } catch (error) {
-      alert('Payment did not go through, please try again or contact support.');
+      console.error('Checkout error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      alert(`Checkout failed: ${errorMessage}`);
     }
   };
 
