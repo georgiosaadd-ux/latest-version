@@ -1,18 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { XCircle, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const CheckoutCancel: React.FC = () => {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Auto-redirect to home after 3 seconds
-    const timer = setTimeout(() => {
-      navigate('/');
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -31,18 +22,18 @@ const CheckoutCancel: React.FC = () => {
           </p>
 
           <div className="bg-gray-50 rounded-xl p-6 mb-8">
-            <p className="text-gray-700 text-sm">
+            <p className="text-gray-700">
               No charges were made to your account. You can return to your cart to complete your purchase whenever you're ready.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
             <button
               onClick={() => navigate('/')}
               className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-full font-semibold hover:bg-gray-50 transition-all"
             >
               <ArrowLeft size={20} />
-              Return to Home
+              Go Home
             </button>
 
             <button
@@ -58,10 +49,6 @@ const CheckoutCancel: React.FC = () => {
               <ShoppingBag size={20} />
               View Cart
             </button>
-          </div>
-
-          <div className="mt-4 text-sm text-gray-500">
-            Redirecting automatically in 3 seconds...
           </div>
 
           <div className="mt-8 pt-8 border-t border-gray-200">

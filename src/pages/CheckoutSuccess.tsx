@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Download, Mail, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 
@@ -58,7 +58,8 @@ const CheckoutSuccess: React.FC = () => {
 
         if (data) {
           setPaymentIntent(data);
-          if (data.status === 'succeeded' || data.status === 'completed') {
+          // Check status column - only 'succeeded' means success
+          if (data.status === 'succeeded') {
             setPaymentStatus('success');
           } else {
             setPaymentStatus('failed');
@@ -67,7 +68,7 @@ const CheckoutSuccess: React.FC = () => {
           // Payment intent not found yet (webhook might not have processed)
           // Wait a bit and try again
           setTimeout(async () => {
-            const { data: retryData } = await supabase
+            const { data: retryData, error: retryError } = await supabase
               .from('payment_intents')
               .select('*')
               .eq('stripe_checkout_session_id', sessionId)
@@ -75,7 +76,15 @@ const CheckoutSuccess: React.FC = () => {
 
             if (retryData) {
               setPaymentIntent(retryData);
-              setPaymentStatus(retryData.status === 'succeeded' || retryData.status === 'completed' ? 'success' : 'failed');
+              // Check status column - only 'succeeded' means success
+              if (retryData.status === 'succeeded') {
+                setPaymentStatus('success');
+              } else {
+                setPaymentStatus('failed');
+              }
+            } else if (retryError) {
+              console.error('Error retrying payment status:', retryError);
+              setPaymentStatus('error');
             } else {
               setPaymentStatus('error');
             }
@@ -90,22 +99,13 @@ const CheckoutSuccess: React.FC = () => {
     checkPaymentStatus();
   }, [sessionId]);
 
-  useEffect(() => {
-    // Auto-redirect to home after 3 seconds
-    const timer = setTimeout(() => {
-      navigate('/');
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [navigate]);
-
   const renderContent = () => {
     switch (paymentStatus) {
       case 'loading':
         return (
           <>
             <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6 animate-pulse">
-              <Download size={48} className="text-blue-600" />
+              <AlertCircle size={48} className="text-blue-600" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Verifying Payment...
@@ -128,27 +128,10 @@ const CheckoutSuccess: React.FC = () => {
             <p className="text-lg text-gray-600 mb-8">
               Thank you for your purchase. Your order has been confirmed.
             </p>
-
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl p-6 mb-8">
-              <div className="flex items-start gap-4 mb-4">
-                <Mail className="text-pink-600 flex-shrink-0 mt-1" size={24} />
-                <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 mb-2">Check Your Email</h3>
-                  <p className="text-gray-600 text-sm">
-                    Your download links have been sent to your email address. If you don't see it, please check your spam folder.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <Download className="text-purple-600 flex-shrink-0 mt-1" size={24} />
-                <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 mb-2">Instant Access</h3>
-                  <p className="text-gray-600 text-sm">
-                    Your eBooks are ready to download. Click the links in your email to get started right away.
-                  </p>
-                </div>
-              </div>
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-8">
+              <p className="text-gray-700">
+                Check your email for download links and order confirmation.
+              </p>
             </div>
           </>
         );
@@ -166,7 +149,7 @@ const CheckoutSuccess: React.FC = () => {
               Your payment could not be processed.
             </p>
             <div className="bg-red-50 rounded-xl p-6 mb-8">
-              <p className="text-gray-700 text-sm">
+              <p className="text-gray-700">
                 Please try again or contact support if the problem persists.
               </p>
             </div>
@@ -186,7 +169,7 @@ const CheckoutSuccess: React.FC = () => {
               We couldn't verify your payment status. Please check your email for confirmation.
             </p>
             <div className="bg-yellow-50 rounded-xl p-6 mb-8">
-              <p className="text-gray-700 text-sm">
+              <p className="text-gray-700">
                 Check your email for order confirmation. If you have any questions, please contact support.
               </p>
             </div>
@@ -204,9 +187,12 @@ const CheckoutSuccess: React.FC = () => {
         <div className="text-center">
           {renderContent()}
 
-          {sessionId && (
-            <div className="text-xs text-gray-400 mb-6">
-              Session ID: {sessionId.substring(0, 20)}...
+          {paymentIntent && (
+            <div className="text-xs text-gray-400 mb-6 space-y-1">
+              <div>Status: {paymentIntent.status}</div>
+              {sessionId && (
+                <div>Session ID: {sessionId.substring(0, 20)}...</div>
+              )}
             </div>
           )}
 
@@ -214,12 +200,8 @@ const CheckoutSuccess: React.FC = () => {
             onClick={() => navigate('/')}
             className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg transition-all"
           >
-            {paymentStatus === 'loading' ? 'Loading...' : 'Return to Home'}
+            Go Home
           </button>
-
-          <div className="mt-4 text-sm text-gray-500">
-            Redirecting automatically in 3 seconds...
-          </div>
 
           <div className="mt-8 pt-8 border-t border-gray-200">
             <p className="text-sm text-gray-500">
