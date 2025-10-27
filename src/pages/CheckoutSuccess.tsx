@@ -1,3 +1,5 @@
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
