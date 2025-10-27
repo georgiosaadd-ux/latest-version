@@ -195,7 +195,7 @@ function ReviewModal({
 
       // Handle potential function errors (like network issues or 500s from the function)
       if (verifyError) {
-        // Check if the error object contains a specific message from the function's response
+         // Check if the error has a specific message from the function's response
         if (verifyError.context && verifyError.context.message) {
           throw new Error(verifyError.context.message);
         }
@@ -203,9 +203,9 @@ function ReviewModal({
         throw new Error(`Verification call failed: ${verifyError.message}`);
       }
 
-      // Handle logical errors returned in the data payload (e.g., "Missing fields")
+      // Handle logical errors returned in the data payload (like "Missing fields")
       // Check verifyData itself exists before accessing properties
-      if (verifyData && verifyData.message && !verifyData.exists) {
+      if (verifyData && verifyData.message && !verifyData.exists) { // Added !verifyData.exists check
         throw new Error(verifyData.message);
       }
 
@@ -239,7 +239,7 @@ function ReviewModal({
         }
         throw new Error(`Save review call failed: ${saveError.message}`);
       }
-      
+
       // Handle logical errors from save function's response data
       if (!saveData || saveData.message !== "Review saved") {
         throw new Error(saveData?.message || "Failed to save review due to an unknown error.");
@@ -511,8 +511,8 @@ const Card: React.FC<{
             >
               <span
                 className="
-         flex items-center gap-1.5 
-         text-[hsl(333,65%,35%)] font-semibold 
+         flex items-center gap-1.5
+         text-[hsl(333,65%,35%)] font-semibold
          text-xs md:text-sm
        "
               >
@@ -601,7 +601,10 @@ const Card: React.FC<{
   );
 };
 
-/* ---------- Mobile Carousel (No changes needed here) ---------- */
+/* ======================================================
+  MOBILE CAROUSEL COMPONENT (CORRECTED)
+  ======================================================
+*/
 const MobileCarousel: React.FC<{
   ebooks: EBook[];
   renderCard: (ebook: EBook, isSelected: boolean) => React.ReactNode;
@@ -609,51 +612,156 @@ const MobileCarousel: React.FC<{
   const [index, setIndex] = useState(0);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<HTMLDivElement[]>([]);
+
   useEffect(() => {
+    // Adjust index if ebooks array changes length
     setIndex((i) => Math.max(0, Math.min(i, ebooks.length - 1)));
   }, [ebooks.length]);
+
+  // Scroll to a specific card index
   const scrollTo = (i: number) => {
     const el = cardRefs.current[i];
-    if (!el) return;
-    el.scrollIntoView({
-      behavior: "smooth",
-      inline: i === ebooks.length - 1 ? "end" : ("center" as ScrollLogicalPosition),
-      block: "nearest",
+    if (!el || !viewportRef.current) return;
+
+    const container = viewportRef.current;
+    const containerWidth = container.offsetWidth;
+    const cardRect = el.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Calculate scroll position to center the card
+    const cardCenter = cardRect.left - containerRect.left + cardRect.width / 2;
+    const scrollLeftTarget = container.scrollLeft + cardCenter - containerWidth / 2;
+
+    container.scrollTo({
+      left: scrollLeftTarget,
+      behavior: 'smooth'
     });
-    setIndex(i);
+    setIndex(i); // Update index after initiating scroll
   };
+
+   // Scroll handler to update index based on viewport center
+   const handleScroll = React.useCallback(() => {
+     if (!viewportRef.current || cardRefs.current.length === 0) return;
+
+     const container = viewportRef.current;
+     const scrollLeft = container.scrollLeft;
+     const containerWidth = container.offsetWidth;
+     const containerCenter = scrollLeft + containerWidth / 2;
+
+     let closestIndex = 0;
+     let minDistance = Infinity;
+
+     cardRefs.current.forEach((card, idx) => {
+       if (!card) return;
+       const cardRect = card.getBoundingClientRect();
+       const containerRect = container.getBoundingClientRect();
+       const cardCenter = cardRect.left - containerRect.left + cardRect.width / 2 + scrollLeft;
+       const distance = Math.abs(containerCenter - cardCenter);
+
+       if (distance < minDistance) {
+         minDistance = distance;
+         closestIndex = idx;
+       }
+     });
+
+     // Check if the index actually changed to avoid unnecessary re-renders
+     setIndex(prevIndex => prevIndex !== closestIndex ? closestIndex : prevIndex);
+
+   }, []);
+
+
+  // Previous/Next button handlers
+  const prev = () => {
+    scrollTo(Math.max(0, index - 1));
+  };
+
+  const next = () => {
+    scrollTo(Math.min(ebooks.length - 1, index + 1));
+  };
+
   return (
     <div className="md:hidden relative">
+      {/* Scrollable container */}
       <div
         ref={viewportRef}
-        className="overflow-x-auto snap-x snap-mandatory px-6 scroll-smooth scrollbar-none"
-        onScroll={() => { /* ... */ }} // Keep scroll logic
+        className="overflow-x-auto snap-x snap-mandatory px-6 scroll-smooth scrollbar-none" // Added px-6 for padding consistency
+        style={{
+           // These paddings help center first/last items when snapping
+           paddingLeft: 'calc(50% - (86% / 2))', // Adjust based on card width (w-[86%])
+           paddingRight: 'calc(50% - (86% / 2))',
+           scrollPaddingLeft: 'calc(50% - (86% / 2))', // For snap alignment
+           scrollPaddingRight: 'calc(50% - (86% / 2))'
+        }}
+        onScroll={handleScroll} // Use the refined scroll handler
       >
-        <div className="flex items-stretch gap-4 py-1">
+        <div className="flex items-stretch gap-4 py-1"> {/* py-1 for slight vertical space */}
           {ebooks.map((ebook, idx) => (
             <div
               key={ebook.id}
               ref={(el) => { if (el) cardRefs.current[idx] = el; }}
               className={[
-                "snap-center",
-                idx === ebooks.length - 1 ? "snap-end pr-2" : "",
-                "shrink-0 w-[86%]",
+                "snap-center", // Snap alignment
+                // Removed snap-end logic, rely on padding and scroll-padding
+                "shrink-0 w-[86%]", // Card width
               ].join(" ")}
             >
-              {renderCard(ebook, idx === index)}
+              {renderCard(ebook, idx === index)} {/* Pass centered status */}
             </div>
           ))}
         </div>
       </div>
-      {/* Navigation Buttons and Dots (keep these) */}
-      {ebooks.length > 1 && ( /* ... */ )}
-      {ebooks.length > 1 && ( /* ... */ )}
+
+      {/* --- CORRECTED: Navigation Buttons --- */}
+      {ebooks.length > 1 && (
+        <> {/* Use Fragment */}
+          <button
+            aria-label="Previous"
+            onClick={prev} // Use updated prev function
+            disabled={index === 0}
+            className={`absolute left-1 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/90 shadow-md border border-gray-200 active:scale-95 transition-opacity ${
+              index === 0 ? "opacity-40 pointer-events-none" : "opacity-100" // Use opacity for disabled state
+            }`}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            aria-label="Next"
+            onClick={next} // Use updated next function
+            disabled={index === ebooks.length - 1}
+            className={`absolute right-1 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/90 shadow-md border border-gray-200 active:scale-95 transition-opacity ${
+              index === ebooks.length - 1 ? "opacity-40 pointer-events-none" : "opacity-100" // Use opacity for disabled state
+            }`}
+          >
+            <ChevronRight size={18} />
+          </button>
+        </>
+      )}
+      {/* --- END CORRECTION --- */}
+
+      {/* --- CORRECTED: Navigation Dots --- */}
+      {ebooks.length > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4"> {/* Dots container */}
+          {ebooks.map((_, idx) => (
+            <button // Use button for accessibility
+              key={idx}
+              onClick={() => scrollTo(idx)} // Allow clicking dots
+              aria-label={`Go to slide ${idx + 1}`}
+              className={`h-2 w-2 rounded-full transition-colors duration-300 ${
+                idx === index ? "bg-[hsl(333,65%,59%)] scale-125" : "bg-gray-300 hover:bg-gray-400" // Highlight active dot and add hover
+              }`}
+            />
+          ))}
+        </div>
+      )}
+      {/* --- END CORRECTION --- */}
+
     </div>
   );
 };
 
+
 /* ======================================================
-  MAIN EBOOK GRID COMPONENT (No changes needed here)
+  MAIN EBOOK GRID COMPONENT (No major changes needed here)
   ======================================================
 */
 const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
@@ -670,21 +778,24 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
   const [waitlistError, setWaitlistError] = useState<Record<string, string>>({});
   const validateEmail = (e: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-  const handleAddToCart = (ebook: EBook) => onAddToCart({product: ebook, quantity: 1}); // Assuming CartItem structure
+  const handleAddToCartInternal = (ebook: EBook) => onAddToCart({ product: ebook, quantity: 1 }); // Map EBook to CartItem
   const openPreview = (ebook: EBook) => setPreviewEbook(ebook);
   const closePreview = () => setPreviewEbook(null);
   const openReviewModal = (ebook: EBook) => { setReviewingEbook(ebook); setReviewModalOpen(true); };
   const closeReviewModal = () => { setReviewModalOpen(false); setReviewingEbook(null); };
   const handleReviewSuccess = (payload: { name: string }) => { setSuccessName(payload.name); setSuccessOpen(true); closeReviewModal(); };
 
+  // Keep the corrected handleNotifyMe
   const handleNotifyMe = async (ebook: EBook) => {
-    // Keep the existing handleNotifyMe logic exactly as it was
     const email = emailInputs[ebook.id];
-    if (!email || !validateEmail(email)) { /* ... */ return; }
+    if (!email || !validateEmail(email)) {
+      setWaitlistError((prev) => ({ ...prev, [ebook.id]: "Please enter a valid email." }));
+      return;
+    }
     setWaitlistError((prev) => ({ ...prev, [ebook.id]: "" }));
     setSubmittingWaitlist((prev) => ({ ...prev, [ebook.id]: true }));
     try {
-      const { data, error } = await supabase.functions.invoke("add-to-waitlist", { body: { /* ... */ } });
+      const { data, error } = await supabase.functions.invoke("add-to-waitlist", { body: { email: email.trim().toLowerCase(), ebook_id: ebook.id } });
       if (error) { if (error.context?.message) throw new Error(error.context.message); throw error; }
       if (data.message.includes("Success")) { setSubmittedEmails((prev) => ({ ...prev, [ebook.id]: true })); }
       else { throw new Error(data.message || "Unknown error"); }
@@ -695,16 +806,46 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
   const getEbooksByCategory = (category: string) => ebooks.filter((ebook) => ebook.category === category);
   const getCategoryAnchor = (category: string) => category === "Manipulation & Toxic Relationships" ? "manipulation-toxic" : category === "Dating & Red Flags" ? "dating-red-flags" : "self-empowering";
   const getCategoryColors = (category: string) => ({ from: "from-[hsl(333,65%,59%)]", to: "to-[hsl(335,77%,80%)]" });
-  const scrollToCategory = (category: string) => { /* ... */ }; // Keep scroll logic
 
-  useEffect(() => { /* ... */ }, []); // Keep scroll effect logic
+  // Scroll logic
+  const scrollToCategory = (category: string) => {
+    const element = document.getElementById(getCategoryAnchor(category));
+    if (element) element.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      // Sticky tabs logic
+      const heroSection = document.getElementById("ebooks"); // Target the main section
+      const heroBottom = heroSection ? heroSection.offsetTop + heroSection.offsetHeight : 0;
+      // Adjust offset as needed, e.g., show tabs earlier/later
+      setShowStickyTabs(window.scrollY > (heroBottom - window.innerHeight / 2)); // Example offset
+
+      // Active tab based on scroll position
+      const manipulationSection = document.getElementById("manipulation-toxic");
+      const datingSection = document.getElementById("dating-red-flags");
+      const selfSection = document.getElementById("self-empowering");
+      const scrollY = window.scrollY;
+      const offset = 150; // Offset from top to trigger tab change
+
+      if (selfSection && scrollY >= selfSection.offsetTop - offset) setActiveTab("self-empowering");
+      else if (datingSection && scrollY >= datingSection.offsetTop - offset) setActiveTab("dating-red-flags");
+      else if (manipulationSection && scrollY >= manipulationSection.offsetTop - offset) setActiveTab("manipulation-toxic");
+      // Optional: Add a condition to reset if scrolling above the first section
+      // else if (manipulationSection && scrollY < manipulationSection.offsetTop - offset) setActiveTab(""); // Reset if needed
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true }); // Use passive listener
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []); // Empty dependency array, runs once
+
+
+  // Render Card function remains the same
   const renderCard = (ebook: EBook, isSelected: boolean) => (
     <Card
       ebook={ebook}
       isSelected={isSelected}
       onPreview={openPreview}
-      onAddToCart={handleAddToCart} // Pass the correct function reference
+      onAddToCart={handleAddToCartInternal} // Use the internal wrapper
       onWriteReview={openReviewModal}
       emailInputs={emailInputs}
       setEmailInputs={setEmailInputs}
@@ -716,7 +857,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
   );
 
   return (
-    <section id="ebooks" className="py-16 bg-gradient-to-br from-gray-50 to-pink-50">
+    <section id="ebooks" className="py-16 bg-gradient-to-br from-gray-50 to-pink-50 scroll-mt-16 md:scroll-mt-0"> {/* Added scroll margin top */}
       <div className="container mx-auto px-4">
         {/* Audio Hook Section */}
         <div className="text-center mb-16">
@@ -734,9 +875,49 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
            </p>
          </div>
 
-         {/* Sticky Tabs */}
-         <div className={`md:hidden fixed top-0 left-0 right-0 z-40 ... ${ showStickyTabs ? "translate-y-0" : "-translate-y-full" }`}>
-           {/* ... Tab structure ... */}
+         {/* Sticky Segmented Tabs (Mobile) */}
+         <div
+            className={`md:hidden sticky top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 transition-transform duration-300 ${ // Changed fixed to sticky
+              showStickyTabs ? "translate-y-0" : "-translate-y-full" // Use translate-y for show/hide
+            }`}
+            style={{ transform: showStickyTabs ? 'translateY(0)' : 'translateY(-100%)' }} // Ensure style matches class
+          >
+           <div className="container mx-auto px-4 py-3">
+             <div className="flex bg-gray-100 rounded-full p-1">
+               <button
+                 onClick={() => scrollToCategory("Manipulation & Toxic Relationships")}
+                 className={`flex-1 py-2 px-3 rounded-full text-sm font-medium transition-all ${
+                   activeTab === "manipulation-toxic"
+                     ? "bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white shadow-sm"
+                     : "text-gray-600 hover:text-gray-800"
+                 }`}
+               >
+                 Manipulation
+               </button>
+               {/* Simplified Label for Dating */}
+                <button
+                 onClick={() => scrollToCategory("Dating & Red Flags")}
+                 className={`flex-1 py-2 px-3 rounded-full text-sm font-medium transition-all ${
+                   activeTab === "dating-red-flags"
+                     ? "bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white shadow-sm"
+                     : "text-gray-600 hover:text-gray-800"
+                 }`}
+               >
+                 Dating {/* Changed from Self */}
+               </button>
+               {/* Added Self-Empowering Tab */}
+                <button
+                 onClick={() => scrollToCategory("Self Empowering")}
+                 className={`flex-1 py-2 px-3 rounded-full text-sm font-medium transition-all ${
+                   activeTab === "self-empowering"
+                     ? "bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white shadow-sm"
+                     : "text-gray-600 hover:text-gray-800"
+                 }`}
+               >
+                 Self {/* Added Self tab */}
+               </button>
+             </div>
+           </div>
          </div>
 
          {/* Categories */}
@@ -746,14 +927,26 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
            const anchor = getCategoryAnchor(category);
            return (
              <div key={category} className="mb-16">
-               {/* Banner */}
-               <div id={anchor} className={`bg-gradient-to-r ${colors.from} ${colors.to} ...`}>
-                 {/* ... Banner content ... */}
+               {/* Banner with scroll margin */}
+               <div id={anchor} className={`scroll-mt-20 bg-gradient-to-r ${colors.from} ${colors.to} rounded-2xl p-8 mb-8 text-white relative overflow-hidden`}> {/* Added scroll-mt-20 */}
+                 <div className="absolute inset-0 bg-black/10" />
+                 <div className="relative z-10">
+                   <h3 className="font-heading text-4xl md:text-5xl lg:text-6xl font-extrabold mb-2">
+                     {category}
+                   </h3>
+                   <p className="text-xl md:text-2xl opacity-90 mb-2">
+                     {category === "Manipulation & Toxic Relationships"
+                       ? "Recognize the patterns, protect your peace"
+                       : category === "Dating & Red Flags"
+                       ? "Navigate modern dating with confidence"
+                       : "Build unshakeable confidence and self-worth"}
+                   </p>
+                 </div>
                </div>
-               {/* Mobile Carousel */}
-               {(category === "Manipulation & Toxic Relationships" || category === "Self Empowering") && (
-                 <MobileCarousel ebooks={categoryEbooks} renderCard={renderCard} />
-               )}
+
+               {/* Mobile Carousel - Use the corrected component */}
+               <MobileCarousel ebooks={categoryEbooks} renderCard={renderCard} />
+
                {/* Desktop Grid */}
                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-8">
                  {categoryEbooks.map((ebook) => (
@@ -766,7 +959,11 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
 
          {/* Preview Modal */}
          {previewEbook && (
-           <PreviewModal ebook={previewEbook} onClose={closePreview} onAddToCart={handleAddToCart} />
+           <PreviewModal
+              ebook={previewEbook}
+              onClose={closePreview}
+              onAddToCart={handleAddToCartInternal} // Use internal wrapper
+           />
          )}
        </div>
 
