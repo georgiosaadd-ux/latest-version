@@ -167,33 +167,15 @@ function ReviewModal({
   const validateEmail = (e: string): boolean =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-  // --- UPDATED HANDLE SUBMIT FUNCTION ---
+// --- **REPLACED** HANDLE SUBMIT FUNCTION ---
   const handleSubmit = async () => {
-     // --- Add check for Supabase client ---
-     if (!supabase) {
-        setMsg("Error connecting to the server. Please try again later.");
-        setStatus("err");
-        return;
-      }
-      // ------------------------------------
+     if (!supabase) { setMsg("Server connection error."); setStatus("err"); return; }
 
     setMsg("");
-    // 1. Frontend Validation
-    if (!name.trim()) {
-      setStatus("err");
-      setMsg("Please enter the name you want to display with your review.");
-      return;
-    }
-    if (!validateEmail(email)) {
-      setStatus("err");
-      setMsg("Please enter a valid email.");
-      return;
-    }
-    if (text.trim().length < 10) {
-      setStatus("err");
-      setMsg("Please write at least 10 characters to help other readers.");
-      return;
-    }
+    // 1. Frontend Validation (Keep as is)
+    if (!name.trim()) { setStatus("err"); setMsg("Please enter display name."); return; }
+    if (!validateEmail(email)) { setStatus("err"); setMsg("Please enter a valid email."); return; }
+    if (text.trim().length < 10) { setStatus("err"); setMsg("Please write at least 10 characters."); return; }
 
     setSubmitting(true);
     const emailTrimmed = email.trim().toLowerCase();
@@ -201,43 +183,40 @@ function ReviewModal({
     const textTrimmed = text.trim();
 
     try {
-      // 2. Call 'verify-customer' function
-      console.log(`Verifying purchase for ${emailTrimmed} on product ${ebookId}`); // Debug log
+      // 2. Verify Purchase
+      console.log(`Verifying purchase: ${emailTrimmed}, ${ebookId}`);
       const { data: verifyData, error: verifyError } =
         await supabase.functions.invoke("verify-customer", {
-          body: {
-            email: emailTrimmed,
-            product_id: ebookId // Send the specific ebook ID
-          },
+          body: { email: emailTrimmed, product_id: ebookId },
         });
 
-      // --- IMPROVED ERROR HANDLING for verify-customer ---
+      // **Handle verify-customer function errors (network or 5xx)**
       if (verifyError) {
-        console.error("verify-customer Error:", verifyError); // Log the full error
-        // Check context for specific message, otherwise use generic function error
-        const specificMessage = verifyError.context?.message || `Verification Edge Function failed. Status: ${verifyError.context?.status || 'unknown'}`;
-        throw new Error(specificMessage);
+        console.error("verify-customer Invoke Error:", verifyError);
+         // Try to get specific message from function's JSON response body
+         let errMsg = "Verification failed. Please try again."; // Default
+         if (verifyError instanceof FunctionsError && verifyError.context?.data?.message) {
+             errMsg = verifyError.context.data.message;
+         } else if (verifyError.message) {
+             errMsg = verifyError.message;
+         }
+         throw new Error(errMsg);
       }
-      // ----------------------------------------------------
-
-      // Handle logical errors returned in the data payload
+      // **Handle logical errors returned in 2xx verify-customer response**
       if (verifyData && verifyData.message && !verifyData.exists) {
-        throw new Error(verifyData.message);
+        throw new Error(verifyData.message); // e.g., "Missing fields"
       }
-
-      // 3. Check if the purchase exists for *this* ebook
-      if (!verifyData || !verifyData.exists) {
+      // **Check verification result**
+      if (!verifyData?.exists) {
         setStatus("err");
-        setMsg(
-          "Sorry, we couldn't find a purchase of this specific ebook linked to that email. Reviews are for verified buyers only."
-        );
+        setMsg( "Sorry, we couldn't find a purchase of this specific ebook linked to that email. Reviews are for verified buyers only.");
         setSubmitting(false);
         return;
       }
-      console.log("Purchase verified."); // Debug log
+      console.log("Purchase verified.");
 
-      // 4. If verification passed, proceed to save the review
-      console.log(`Saving review for ${emailTrimmed} on product ${ebookId}`); // Debug log
+      // 3. Save Review
+      console.log(`Saving review: ${emailTrimmed}, ${ebookId}`);
       const { data: saveData, error: saveError } =
         await supabase.functions.invoke("save-review", {
           body: {
@@ -249,43 +228,43 @@ function ReviewModal({
           },
         });
 
-      // --- IMPROVED ERROR HANDLING for save-review ---
+      // **Handle save-review function errors (network, 5xx, OR 409 Conflict)**
       if (saveError) {
-         console.error("save-review Error:", saveError); // Log the full error
-         const specificMessage = saveError.context?.message || `Save Review Edge Function failed. Status: ${saveError.context?.status || 'unknown'}`;
-         throw new Error(specificMessage);
+        console.error("save-review Invoke Error:", saveError);
+        // Try to get specific message from function's JSON response body (like "already reviewed")
+        let errMsg = "Failed to save review. Please try again."; // Default
+        // Check the context.data property for the JSON body of non-2xx responses
+        if (saveError instanceof FunctionsError && saveError.context?.data?.message) {
+            errMsg = saveError.context.data.message; // This should catch the 409 message
+        } else if (saveError.message) {
+            errMsg = saveError.message;
+        }
+        throw new Error(errMsg);
       }
-      // -----------------------------------------------
-
-      // Handle logical errors from save function's response data
-      if (!saveData || saveData.message !== "Review saved") {
-        throw new Error(saveData?.message || "Failed to save review due to an unknown error.");
+      // **Handle logical errors returned in 2xx save-review response**
+      if (!saveData?.message || saveData.message !== "Review saved") {
+        throw new Error(saveData?.message || "An unexpected issue occurred while saving.");
       }
 
-      // 5. Success!
-      console.log("Review saved successfully."); // Debug log
+      // 4. Success
+      console.log("Review saved successfully.");
       setStatus("ok");
       setMsg("Your review was submitted successfully.");
-      onSuccess?.({
-        stars,
-        name: nameTrimmed,
-        email: emailTrimmed,
-        text: textTrimmed,
-      });
+      onSuccess?.({ stars, name: nameTrimmed, email: emailTrimmed, text: textTrimmed });
 
     } catch (err: any) {
-      // 6. Catch all errors (from verify or save steps)
-      console.error("Review submission process failed:", err); // Log the caught error
+      // 5. Catch ALL errors thrown from try block
+      console.error("Review submission process failed:", err);
       setStatus("err");
-      // Display the specific error message thrown by the try block
-      setMsg(err.message || "An unexpected error occurred. Please check logs or try again.");
+      // Display the specific error message
+      setMsg(err.message || "An unknown error occurred. Please check logs or try again.");
 
     } finally {
-      // 7. Always stop loading indicator
+      // 6. Always stop loading
       setSubmitting(false);
     }
   };
-  // --- END OF UPDATED HANDLE SUBMIT ---
+  // --- END OF REPLACED HANDLE SUBMIT ---
 
 
   if (!open) return null;
