@@ -25,14 +25,9 @@ import PreviewModal from "./PreviewModal";
 import { formatCurrency } from "../utils/currency";
 
 // 1. --- SUPABASE CLIENT DEFINITION ---
-// We import the 'createClient' function from the Supabase library
 import { createClient } from "@supabase/supabase-js";
-
-// We get your project URL and Public Anon Key from Vite's environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// We create the 'supabase' client. All code below this line can now use it.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // ------------------------------------
 
@@ -75,11 +70,9 @@ function ReviewSuccessOverlay({
   onClose: () => void;
 }) {
   if (!open) return null;
-
   return (
     <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-6">
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-        {/* Header burst */}
         <div className="relative h-28 bg-gradient-to-r from-emerald-500 to-emerald-400">
           <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_30%_20%,white,transparent_35%),radial-gradient(circle_at_70%_60%,white,transparent_35%)]" />
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
@@ -88,7 +81,6 @@ function ReviewSuccessOverlay({
             </div>
           </div>
         </div>
-
         <div className="pt-14 px-6 pb-6 text-center">
           <h3 className="text-xl font-extrabold tracking-tight text-gray-900">
             Thanks, {name || "friend"}! 🎉
@@ -97,7 +89,6 @@ function ReviewSuccessOverlay({
             Your review is locked in. Real voices make this library smarter and
             kinder.
           </p>
-
           <button
             onClick={onClose}
             className="mt-6 w-full rounded-2xl bg-emerald-500 text-white font-semibold py-3 hover:bg-emerald-600 transition shadow"
@@ -105,7 +96,6 @@ function ReviewSuccessOverlay({
             Close
           </button>
         </div>
-
         <button
           aria-label="Close"
           onClick={onClose}
@@ -119,19 +109,19 @@ function ReviewSuccessOverlay({
 }
 
 /* ======================================================
-   2. UPDATED REVIEW MODAL COMPONENT (with backend logic)
+  REVIEW MODAL COMPONENT (no changes from before)
   ======================================================
 */
 function ReviewModal({
   open,
   ebookTitle,
-  ebookId, // <-- Added this prop
+  ebookId,
   onClose,
   onSuccess,
 }: {
   open: boolean;
   ebookTitle: string;
-  ebookId: string; // <-- Added this prop
+  ebookId: string;
   onClose: () => void;
   onSuccess?: (payload: {
     stars: number;
@@ -163,13 +153,8 @@ function ReviewModal({
   const validateEmail = (e: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-  /* =================================
-   * MODIFIED HANDLE SUBMIT FUNCTION
-   * ================================= */
   const handleSubmit = async () => {
     setMsg("");
-
-    // 1. Frontend Validation
     if (!name.trim()) {
       setStatus("err");
       setMsg("Please enter the name you want to display with your review.");
@@ -185,32 +170,19 @@ function ReviewModal({
       setMsg("Please write at least 10 characters to help other readers.");
       return;
     }
-
     setSubmitting(true);
-
     const emailTrimmed = email.trim().toLowerCase();
     const nameTrimmed = name.trim();
     const textTrimmed = text.trim();
-
     try {
-      // 2. Call 'verify-customer' function (only checking email)
-      //    This 'supabase' variable is the one we defined at the top of the file
       const { data: verifyData, error: verifyError } =
         await supabase.functions.invoke("verify-customer", {
-          body: {
-            email: emailTrimmed,
-          },
+          body: { email: emailTrimmed },
         });
-
-      if (verifyError) {
+      if (verifyError)
         throw new Error(`Verification failed: ${verifyError.message}`);
-      }
-      if (verifyData && verifyData.message) {
-        // Handle logical errors from the function (e.g., "Missing fields")
+      if (verifyData && verifyData.message)
         throw new Error(verifyData.message);
-      }
-
-      // 3. Check if customer exists
       if (!verifyData || !verifyData.exists) {
         setStatus("err");
         setMsg(
@@ -219,8 +191,6 @@ function ReviewModal({
         setSubmitting(false);
         return;
       }
-
-      // 4. If verified, call 'save-review' with all details
       const { data: saveData, error: saveError } =
         await supabase.functions.invoke("save-review", {
           body: {
@@ -231,15 +201,9 @@ function ReviewModal({
             display_name: nameTrimmed,
           },
         });
-
-      if (saveError) {
-        throw new Error(`Save failed: ${saveError.message}`);
-      }
-      if (!saveData || saveData.message !== "Review saved") {
+      if (saveError) throw new Error(`Save failed: ${saveError.message}`);
+      if (!saveData || saveData.message !== "Review saved")
         throw new Error(saveData.message || "Failed to save review.");
-      }
-
-      // 5. Success!
       setStatus("ok");
       setMsg("Your review was submitted successfully.");
       onSuccess?.({
@@ -251,7 +215,6 @@ function ReviewModal({
     } catch (err: any) {
       console.error("Review submission error:", err);
       setStatus("err");
-      // Show user-friendly messages
       if (
         err.message.includes("verified buyers") ||
         err.message.includes("Missing fields")
@@ -264,12 +227,8 @@ function ReviewModal({
       setSubmitting(false);
     }
   };
-  /* =================================
-   * END OF MODIFIED FUNCTION
-   * ================================= */
 
   if (!open) return null;
-
   return (
     <div className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative">
@@ -288,7 +247,6 @@ function ReviewModal({
               <p className="text-sm opacity-90">Real readers, real experiences</p>
             </div>
           </div>
-
           <button
             className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/20 active:scale-95 transition"
             onClick={onClose}
@@ -297,7 +255,6 @@ function ReviewModal({
             <X size={18} className="text-white drop-shadow" />
           </button>
         </div>
-
         {/* Body */}
         <div className="p-6">
           <div className="flex items-start gap-3 mb-4">
@@ -309,7 +266,6 @@ function ReviewModal({
               </div>
             </div>
           </div>
-
           {/* Stars */}
           <div className="flex items-center gap-2 my-3">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -331,7 +287,6 @@ function ReviewModal({
             ))}
             <span className="ml-1 text-sm text-gray-600">{stars} stars</span>
           </div>
-
           {/* Display name */}
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Display name
@@ -341,7 +296,7 @@ function ReviewModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Layla M." // Placeholder updated
+              placeholder="e.g., Layla M."
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-pink-400"
             />
             <User2
@@ -349,7 +304,6 @@ function ReviewModal({
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
           </div>
-
           {/* Email */}
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Email used for purchase
@@ -367,7 +321,6 @@ function ReviewModal({
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
           </div>
-
           {/* Review text */}
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Your review
@@ -379,7 +332,6 @@ function ReviewModal({
             className="w-full border-2 border-gray-200 rounded-2xl p-3 text-sm focus:outline-none focus:border-pink-400"
             rows={5}
           />
-
           {/* Status */}
           {status === "ok" && (
             <div className="mt-3 flex items-center gap-2 text-emerald-600 text-sm font-semibold">
@@ -393,7 +345,6 @@ function ReviewModal({
               <span>{msg}</span>
             </div>
           )}
-
           {/* Actions */}
           <div className="mt-5 flex gap-3">
             <button
@@ -410,15 +361,16 @@ function ReviewModal({
               {submitting ? "Submitting..." : "Submit review"}
             </button>
           </div>
-
-          {/* Removed the demo helper text */}
         </div>
       </div>
     </div>
   );
 }
 
-/* ---------- Reusable card (fixed height; selected card drops a hair) ---------- */
+/* ======================================================
+  REUSABLE CARD COMPONENT (NOW WITH LOADING/ERROR STATES)
+  ======================================================
+*/
 const CARD_FIXED_H = "h-[600px]";
 
 interface EbookGridProps {
@@ -437,6 +389,9 @@ const Card: React.FC<{
   setEmailInputs?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   submittedEmails?: Record<string, boolean>;
   onNotify?: (e: EBook) => void;
+  // --- NEW PROPS FOR WAITLIST ---
+  isSubmitting?: boolean;
+  errorMessage?: string;
 }> = ({
   ebook,
   isSelected,
@@ -447,6 +402,9 @@ const Card: React.FC<{
   setEmailInputs,
   submittedEmails = {},
   onNotify,
+  // --- NEW PROPS FOR WAITLIST ---
+  isSubmitting,
+  errorMessage,
 }) => {
   return (
     <div
@@ -456,7 +414,7 @@ const Card: React.FC<{
         isSelected ? "translate-y-1 shadow-xl" : "hover:-translate-y-1",
       ].join(" ")}
     >
-      {/* Cover */}
+      {/* Cover (no changes) */}
       <div className="relative h-48 overflow-hidden">
         <img
           src={ebook.cover}
@@ -479,21 +437,18 @@ const Card: React.FC<{
       </div>
 
       <div className="p-6 flex flex-col flex-1">
+        {/* Header/Info (no changes) */}
         <h4 className="font-heading text-xl font-bold mb-2">
           <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
             {ebook.title}
           </span>
         </h4>
-
         {typeof ebook.rating === "number" && (
           <StarRating rating={ebook.rating} reviewCount={ebook.reviewCount} />
         )}
-
         <p className="text-gray-600 mb-4 text-sm leading-relaxed">
           {ebook.description}
         </p>
-
-        {/* Preview */}
         <div className="mb-3">
           <button
             onClick={() => onPreview(ebook)}
@@ -503,8 +458,6 @@ const Card: React.FC<{
             Preview <ExternalLink size={14} />
           </button>
         </div>
-
-        {/* Write a Review (same design, tighter spacing) */}
         {!ebook.comingSoon && (
           <div className="mb-3">
             <button
@@ -515,7 +468,6 @@ const Card: React.FC<{
          md:justify-between
        "
             >
-              {/* Left: star + label (compact) */}
               <span
                 className="
          flex items-center gap-1.5 
@@ -529,8 +481,6 @@ const Card: React.FC<{
                 />
                 Write a review
               </span>
-
-              {/* Right: badge (slides right without stretching left) */}
               <span
                 className="
          ml-auto md:ml-0 flex items-center gap-1
@@ -544,8 +494,7 @@ const Card: React.FC<{
             </button>
           </div>
         )}
-
-        {/* Chips + price stacked */}
+        {/* Price/Chips (no changes) */}
         <div className="mt-auto pt-4">
           <div className="flex flex-wrap gap-2 mb-3">
             <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-2 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1">
@@ -560,7 +509,7 @@ const Card: React.FC<{
           </div>
         </div>
 
-        {/* CTA */}
+        {/* --- MODIFIED CTA SECTION --- */}
         <div className="mt-4">
           {ebook.comingSoon ? (
             submittedEmails?.[ebook.id] ? (
@@ -583,11 +532,18 @@ const Card: React.FC<{
                 />
                 <button
                   onClick={() => onNotify?.(ebook)}
-                  className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  disabled={isSubmitting} // <-- Add disabled state
+                  className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60" // <-- Add disabled style
                 >
                   <Mail size={18} />
-                  Notify Me at Launch
+                  {isSubmitting ? "Adding..." : "Notify Me at Launch"} {/* <-- Change text */}
                 </button>
+                {/* --- ADD ERROR MESSAGE --- */}
+                {errorMessage && (
+                  <p className="text-xs text-red-600 text-center -mt-2 pt-0">
+                    {errorMessage}
+                  </p>
+                )}
               </div>
             )
           ) : (
@@ -605,7 +561,7 @@ const Card: React.FC<{
   );
 };
 
-/* ---------- Isolated Mobile Carousel for each category ---------- */
+/* ---------- Mobile Carousel (no changes) ---------- */
 const MobileCarousel: React.FC<{
   ebooks: EBook[];
   renderCard: (ebook: EBook, isSelected: boolean) => React.ReactNode;
@@ -613,11 +569,9 @@ const MobileCarousel: React.FC<{
   const [index, setIndex] = useState(0);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<HTMLDivElement[]>([]);
-
   useEffect(() => {
     setIndex((i) => Math.max(0, Math.min(i, ebooks.length - 1)));
   }, [ebooks.length]);
-
   const scrollTo = (i: number) => {
     const el = cardRefs.current[i];
     if (!el) return;
@@ -628,7 +582,6 @@ const MobileCarousel: React.FC<{
     });
     setIndex(i);
   };
-
   return (
     <div className="md:hidden relative">
       <div
@@ -673,7 +626,6 @@ const MobileCarousel: React.FC<{
           ))}
         </div>
       </div>
-
       {ebooks.length > 1 && (
         <>
           <button
@@ -704,7 +656,6 @@ const MobileCarousel: React.FC<{
           </button>
         </>
       )}
-
       {ebooks.length > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           {ebooks.map((_, idx) => (
@@ -743,6 +694,18 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
     Record<string, boolean>
   >({});
 
+  // --- NEW STATE FOR WAITLIST ---
+  const [submittingWaitlist, setSubmittingWaitlist] = useState<
+    Record<string, boolean>
+  >({});
+  const [waitlistError, setWaitlistError] = useState<Record<string, string>>(
+    {}
+  );
+  // Simple email validation
+  const validateEmail = (e: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+  // ------------------------------
+
   const handleAddToCart = (ebook: EBook) => onAddToCart(ebook);
   const openPreview = (ebook: EBook) => setPreviewEbook(ebook);
   const closePreview = () => setPreviewEbook(null);
@@ -754,7 +717,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
 
   const closeReviewModal = () => {
     setReviewModalOpen(false);
-    setReviewingEbook(null); // <-- fixed typo here
+    setReviewingEbook(null);
   };
 
   const handleReviewSuccess = (payload: {
@@ -763,25 +726,72 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
     email: string;
     text: string;
   }) => {
-    // Ensure overlay shows immediately
     setSuccessName(payload.name);
     setSuccessOpen(true);
-    // Then close the modal
     closeReviewModal();
   };
 
-  const handleNotifyMe = (ebook: EBook) => {
+  /* =================================
+   * MODIFIED HANDLE NOTIFY ME FUNCTION
+   * ================================= */
+  const handleNotifyMe = async (ebook: EBook) => {
     const email = emailInputs[ebook.id];
-    if (!email || !email.includes("@")) {
-      alert("Please enter a valid email address");
+
+    // 1. Frontend validation
+    if (!email || !validateEmail(email)) {
+      setWaitlistError((prev) => ({
+        ...prev,
+        [ebook.id]: "Please enter a valid email.",
+      }));
       return;
     }
-    setSubmittedEmails((prev) => ({ ...prev, [ebook.id]: true }));
-    setTimeout(
-      () => alert("Thank you! We'll notify you when this ebook launches."),
-      100
-    );
+
+    // 2. Reset error, set loading state
+    setWaitlistError((prev) => ({ ...prev, [ebook.id]: "" }));
+    setSubmittingWaitlist((prev) => ({ ...prev, [ebook.id]: true }));
+
+    try {
+      // 3. Call the new edge function
+      const { data, error } = await supabase.functions.invoke(
+        "add-to-waitlist",
+        {
+          body: {
+            email: email.trim().toLowerCase(),
+            ebook_id: ebook.id,
+          },
+        }
+      );
+
+      if (error) {
+        // Network or function-level error (e.g., 500)
+        throw new Error(error.message);
+      }
+
+      // 4. Handle success or "already on list"
+      if (data.message.includes("Success")) {
+        // This is a new, successful signup
+        setSubmittedEmails((prev) => ({ ...prev, [ebook.id]: true }));
+      } else if (data.message.includes("already on the waitlist")) {
+        // Also a "success" - they are on the list
+        setSubmittedEmails((prev) => ({ ...prev, [ebook.id]: true }));
+      } else {
+        // Any other message from the function is an error
+        throw new Error(data.message || "An unknown error occurred.");
+      }
+    } catch (err: any) {
+      // 5. Handle errors
+      setWaitlistError((prev) => ({
+        ...prev,
+        [ebook.id]: err.message || "An unexpected error occurred.",
+      }));
+    } finally {
+      // 6. Stop loading
+      setSubmittingWaitlist((prev) => ({ ...prev, [ebook.id]: false }));
+    }
   };
+  /* =================================
+   * END OF MODIFIED FUNCTION
+   * ================================= */
 
   const getEbooksByCategory = (category: string) =>
     ebooks.filter((ebook) => ebook.category === category);
@@ -829,6 +839,9 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  /* =================================
+   * MODIFIED RENDER CARD FUNCTION
+   * ================================= */
   const renderCard = (ebook: EBook, isSelected: boolean) => (
     <Card
       ebook={ebook}
@@ -840,8 +853,14 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
       setEmailInputs={setEmailInputs}
       submittedEmails={submittedEmails}
       onNotify={handleNotifyMe}
+      // --- Pass new props down ---
+      isSubmitting={submittingWaitlist[ebook.id]}
+      errorMessage={waitlistError[ebook.id]}
     />
   );
+  /* =================================
+   * END OF MODIFIED FUNCTION
+   * ================================= */
 
   return (
     <section
@@ -849,7 +868,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
       className="py-16 bg-gradient-to-br from-gray-50 to-pink-50"
     >
       <div className="container mx-auto px-4">
-        {/* Audio Hook Section */}
+        {/* Audio Hook Section (no changes) */}
         <div className="text-center mb-16">
           <h2 className="font-heading font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent text-2xl md:text-3xl lg:text-4xl block mb-2">
@@ -865,7 +884,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
           </p>
         </div>
 
-        {/* Sticky Segmented Tabs (Mobile) */}
+        {/* Sticky Segmented Tabs (Mobile) (no changes) */}
         <div
           className={`md:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 transition-all duration-300 ${
             showStickyTabs ? "translate-y-0" : "-translate-y-full"
@@ -899,7 +918,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
           </div>
         </div>
 
-        {/* Categories */}
+        {/* Categories (no changes) */}
         {activeCategories.map((category) => {
           const categoryEbooks = getEbooksByCategory(category);
           const colors = getCategoryColors(category);
@@ -907,7 +926,6 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
 
           return (
             <div key={category} className="mb-16">
-              {/* Banner */}
               <div
                 id={anchor}
                 className={`bg-gradient-to-r ${colors.from} ${colors.to} rounded-2xl p-8 mb-8 text-white relative overflow-hidden`}
@@ -927,13 +945,11 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
                 </div>
               </div>
 
-              {/* Mobile: carousels for Manipulation + Self Empowering */}
               {(category === "Manipulation & Toxic Relationships" ||
                 category === "Self Empowering") && (
                 <MobileCarousel ebooks={categoryEbooks} renderCard={renderCard} />
               )}
 
-              {/* Desktop grid for all */}
               <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-8">
                 {categoryEbooks.map((ebook) => (
                   <div key={ebook.id}>{renderCard(ebook, false)}</div>
@@ -952,10 +968,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
         )}
       </div>
 
-      {/* ======================================================
-         3. UPDATED MODAL CALL (passing ebookId)
-        ======================================================
-      */}
+      {/* Modals (no changes) */}
       <ReviewModal
         open={reviewModalOpen}
         ebookTitle={reviewingEbook?.title ?? ""}
@@ -963,8 +976,6 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
         onClose={closeReviewModal}
         onSuccess={handleReviewSuccess}
       />
-
-      {/* Sticky success overlay */}
       <ReviewSuccessOverlay
         open={successOpen}
         name={successName}
