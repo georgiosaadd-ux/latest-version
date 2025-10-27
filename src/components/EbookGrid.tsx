@@ -109,7 +109,7 @@ function ReviewSuccessOverlay({
 }
 
 /* ======================================================
-  REVIEW MODAL COMPONENT (no changes from before)
+  REVIEW MODAL COMPONENT (no changes)
   ======================================================
 */
 function ReviewModal({
@@ -368,7 +368,7 @@ function ReviewModal({
 }
 
 /* ======================================================
-  REUSABLE CARD COMPONENT (NOW WITH LOADING/ERROR STATES)
+  REUSABLE CARD COMPONENT (no changes)
   ======================================================
 */
 const CARD_FIXED_H = "h-[600px]";
@@ -389,7 +389,6 @@ const Card: React.FC<{
   setEmailInputs?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   submittedEmails?: Record<string, boolean>;
   onNotify?: (e: EBook) => void;
-  // --- NEW PROPS FOR WAITLIST ---
   isSubmitting?: boolean;
   errorMessage?: string;
 }> = ({
@@ -402,7 +401,6 @@ const Card: React.FC<{
   setEmailInputs,
   submittedEmails = {},
   onNotify,
-  // --- NEW PROPS FOR WAITLIST ---
   isSubmitting,
   errorMessage,
 }) => {
@@ -509,7 +507,7 @@ const Card: React.FC<{
           </div>
         </div>
 
-        {/* --- MODIFIED CTA SECTION --- */}
+        {/* --- MODIFIED CTA SECTION (no changes from previous) --- */}
         <div className="mt-4">
           {ebook.comingSoon ? (
             submittedEmails?.[ebook.id] ? (
@@ -532,13 +530,12 @@ const Card: React.FC<{
                 />
                 <button
                   onClick={() => onNotify?.(ebook)}
-                  disabled={isSubmitting} // <-- Add disabled state
-                  className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60" // <-- Add disabled style
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   <Mail size={18} />
-                  {isSubmitting ? "Adding..." : "Notify Me at Launch"} {/* <-- Change text */}
+                  {isSubmitting ? "Adding..." : "Notify Me at Launch"}
                 </button>
-                {/* --- ADD ERROR MESSAGE --- */}
                 {errorMessage && (
                   <p className="text-xs text-red-600 text-center -mt-2 pt-0">
                     {errorMessage}
@@ -694,14 +691,13 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
     Record<string, boolean>
   >({});
 
-  // --- NEW STATE FOR WAITLIST ---
+  // --- NEW STATE FOR WAITLIST (no changes) ---
   const [submittingWaitlist, setSubmittingWaitlist] = useState<
     Record<string, boolean>
   >({});
   const [waitlistError, setWaitlistError] = useState<Record<string, string>>(
     {}
   );
-  // Simple email validation
   const validateEmail = (e: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
   // ------------------------------
@@ -732,7 +728,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
   };
 
   /* =================================
-   * MODIFIED HANDLE NOTIFY ME FUNCTION
+   * REPLACED & CORRECTED HANDLE NOTIFY ME FUNCTION
    * ================================= */
   const handleNotifyMe = async (ebook: EBook) => {
     const email = emailInputs[ebook.id];
@@ -762,30 +758,35 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
         }
       );
 
+      // 4. --- THIS IS THE FIX ---
       if (error) {
-        // Network or function-level error (e.g., 500)
+        // A non-2xx response was received.
+        // The real JSON message from your function is in 'error.context'.
+        if (error.context && error.context.message) {
+          // This will be "You are already on the waitlist!" or "Invalid email format"
+          throw new Error(error.context.message);
+        }
+        // Fallback for unexpected errors
         throw new Error(error.message);
       }
+      // --- END OF FIX ---
 
-      // 4. Handle success or "already on list"
+      // 5. This code now only runs on a 2xx (success) response
       if (data.message.includes("Success")) {
-        // This is a new, successful signup
-        setSubmittedEmails((prev) => ({ ...prev, [ebook.id]: true }));
-      } else if (data.message.includes("already on the waitlist")) {
-        // Also a "success" - they are on the list
         setSubmittedEmails((prev) => ({ ...prev, [ebook.id]: true }));
       } else {
-        // Any other message from the function is an error
+        // Just in case the 200 response has an unexpected message
         throw new Error(data.message || "An unknown error occurred.");
       }
     } catch (err: any) {
-      // 5. Handle errors
+      // 6. Handle all thrown errors
+      // This will now display the *real* message, not the generic one
       setWaitlistError((prev) => ({
         ...prev,
         [ebook.id]: err.message || "An unexpected error occurred.",
       }));
     } finally {
-      // 6. Stop loading
+      // 7. Stop loading
       setSubmittingWaitlist((prev) => ({ ...prev, [ebook.id]: false }));
     }
   };
@@ -840,7 +841,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
   }, []);
 
   /* =================================
-   * MODIFIED RENDER CARD FUNCTION
+   * MODIFIED RENDER CARD FUNCTION (no changes)
    * ================================= */
   const renderCard = (ebook: EBook, isSelected: boolean) => (
     <Card
@@ -853,7 +854,6 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
       setEmailInputs={setEmailInputs}
       submittedEmails={submittedEmails}
       onNotify={handleNotifyMe}
-      // --- Pass new props down ---
       isSubmitting={submittingWaitlist[ebook.id]}
       errorMessage={waitlistError[ebook.id]}
     />
