@@ -13,7 +13,7 @@ import {
   VolumeX,
   ImageIcon,
 } from "lucide-react";
-// import importedReviews from "./testimonials.json"; // <-- REMOVED
+// REMOVED JSON import
 
 // 1. --- SUPABASE CLIENT DEFINITION ---
 import { createClient } from "@supabase/supabase-js";
@@ -26,12 +26,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 /* =========================
    Types
    ========================= */
-// UPDATED Review type to match our database
-type Review = { 
-  text: string; 
-  author: string; 
-  rating: number 
-};
+// --- REVERTED to original Review type ---
+type Review = { text: string; author: string; location: string };
 
 type MediaItem =
   | { url: string; type: "image" | "video"; filename: string }
@@ -334,17 +330,33 @@ const StoriesRail: React.FC = () => {
 /* ========================================================
    Main Testimonials section (MODIFIED)
    ======================================================== */
+
+// --- ADDED: Your 9 hardcoded reviews for the carousel ---
+const carouselReviews: Review[] = [
+  { text: "OMG I didn't even know what gaslighting was until I read this. Now I can literally see every trick my ex used on me, and I'll never fall for it again.", author: "Layla, 27", location: "New York" },
+  { text: "I have to say this out loud: these books EXPOSED men. The love-bombing, the lies, the fake promises… I finally feel free.", author: "Karina, 32", location: "Miami" },
+  { text: "Honestly? It felt like someone grabbed my diary and explained it back to me. Every red flag, every confusion, all laid out. I can't believe I didn't see it sooner.", author: "Sofia, 29", location: "Toronto" },
+  { text: "I'm shaking writing this. I used to blame myself for everything. Reading this made me realize it wasn't me, it was his manipulation. Game over.", author: "Hannah, 35", location: "London" },
+  { text: "No one ever told me what 'charm to control' really means. This guide opened my eyes so wide, now I spot it in minutes.", author: "Amira, 26", location: "Dubai" },
+  { text: "I swear it felt like someone finally turned the lights on. I saw the patterns in every single guy I dated, and I felt my self-worth snap back.", author: "Vanessa, 31", location: "Sydney" },
+  { text: "I kept asking myself, why do I attract the wrong men? This literally answered it. And now I know how to stop the cycle. Life-changing.", author: "Jasmine, 28", location: "Berlin" },
+  { text: "I didn't want to admit it, but reading this made me cry. It exposed every silent treatment, every twisted word… and gave me the courage to walk away.", author: "Noura, 37", location: "Paris" },
+  { text: "This isn't just advice, it's survival. I finally see through the fake charm and empty promises. Honestly, I wish every woman could read this.", author: "Elena, 40", location: "Los Angeles" },
+];
+
+
 const Testimonials: React.FC = () => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [isPaused, setIsPaused] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-
-  // --- NEW: State for loading reviews from DB ---
-  const [allReviews, setAllReviews] = React.useState<Review[]>([]);
+  
+  // --- MODIFIED: State for reviews ---
+  // All reviews (modal) starts with the 9 hardcoded ones
+  const [allReviews, setAllReviews] = React.useState<Review[]>(carouselReviews);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-
-  // --- NEW: useEffect to fetch reviews ---
+  
+  // --- NEW: useEffect to fetch DB reviews ---
   React.useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -354,14 +366,14 @@ const Testimonials: React.FC = () => {
         const { data, error } = await supabase.functions.invoke('get-approved-reviews');
         
         if (error) {
-          // Handle non-2xx responses
-          if (error.context && error.context.message) {
-            throw new Error(error.context.message); 
-          }
+          if (error.context && error.context.message) throw new Error(error.context.message); 
           throw new Error(error.message);
         }
 
-        setAllReviews(data as Review[]);
+        const dbReviews = data as Review[];
+        // Combine the 9 hardcoded reviews with all DB reviews
+        setAllReviews([...carouselReviews, ...dbReviews]);
+
       } catch (err: any) {
         console.error("Failed to fetch reviews:", err);
         setError("Could not load reviews at this time.");
@@ -372,25 +384,22 @@ const Testimonials: React.FC = () => {
     fetchReviews();
   }, []); // Runs once on component mount
 
-  // --- MODIFIED: Use the first 9 reviews for the carousel ---
-  const carouselReviews = allReviews.slice(0, 9);
-
-  // --- MODIFIED: Use dynamic carousel length ---
+  
+  // Carousel auto-scroll logic
   React.useEffect(() => {
-    if (isPaused || carouselReviews.length === 0) return;
+    if (isPaused) return;
+    // Carousel length is fixed to the 9 hardcoded reviews
     const id = setInterval(() => setCurrentIndex((p) => (p + 1) % carouselReviews.length), 2500);
     return () => clearInterval(id);
-  }, [isPaused, carouselReviews.length]);
+  }, [isPaused]); // Removed carouselReviews.length, it's constant
 
   const next = () => {
-    if (carouselReviews.length === 0) return;
     setIsPaused(true);
     setCurrentIndex((p) => (p + 1) % carouselReviews.length);
     setTimeout(() => setIsPaused(false), 5000);
   };
 
   const prev = () => {
-    if (carouselReviews.length === 0) return;
     setIsPaused(true);
     setCurrentIndex((p) => (p - 1 + carouselReviews.length) % carouselReviews.length);
     setTimeout(() => setIsPaused(false), 5000);
@@ -411,32 +420,20 @@ const Testimonials: React.FC = () => {
     return () => mq.removeEventListener?.("change", set);
   }, []);
 
-  // --- NEW: Calculate average rating ---
-  const averageRating = React.useMemo(() => {
-    if (allReviews.length === 0) return 4.9; // Default fallback
-    const sum = allReviews.reduce((acc, r) => acc + r.rating, 0);
-    return (sum / allReviews.length).toFixed(1);
-  }, [allReviews]);
-
   return (
     <section className="py-16 bg-gradient-to-br from-rose-50 via-pink-50 to-cream overflow-hidden scroll-smooth">
       <div className="container mx-auto px-4 text-center">
-        {/* --- MODIFIED: HEADER --- */}
+        {/* --- HEADER (Reverted to original static 4.9/5) --- */}
         <div className="mb-10">
           <div className="flex justify-center mb-3">
-            {/* Show stars based on average */}
             {[...Array(5)].map((_, i) => (
-              <Star 
-                key={i} 
-                size={40} 
-                className={i < Math.floor(Number(averageRating)) ? "text-[hsl(333,65%,59%)] fill-[hsl(333,65%,59%)]" : "text-gray-300"}
-              />
+              <Star key={i} size={40} className="text-[hsl(333,65%,59%)] fill-[hsl(333,65%,59%)]" />
             ))}
           </div>
 
           <div className="flex items-center justify-center gap-3 flex-wrap mb-1">
             <h3 className="text-5xl font-extrabold bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
-              {averageRating}/5
+              4.9/5
             </h3>
             <a
               href="#reviews-grid"
@@ -450,7 +447,7 @@ const Testimonials: React.FC = () => {
 
           {/* --- MODIFIED: Show dynamic review count --- */}
           <p className="text-gray-600 font-semibold">
-            {isLoading ? "Loading verified reviews..." : `Based on ${allReviews.length} verified reviews`}
+            {isLoading ? "Loading reviews..." : `Based on ${allReviews.length}+ verified reviews`}
           </p>
         </div>
 
@@ -466,22 +463,18 @@ const Testimonials: React.FC = () => {
 
         {/* --- MODIFIED: Written testimonials carousel --- */}
         <div className="relative max-w-6xl mx-auto mt-2">
-          {carouselReviews.length > 0 && (
-            <>
-              <button
-                onClick={prev}
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white shadow-md rounded-full flex items-center justify-center hover:bg-gray-50 transition"
-              >
-                <ChevronLeft size={24} className="text-[hsl(333,65%,59%)]" />
-              </button>
-              <button
-                onClick={next}
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white shadow-md rounded-full flex items-center justify-center hover:bg-gray-50 transition"
-              >
-                <ChevronRight size={24} className="text-[hsl(333,65%,59%)]" />
-              </button>
-            </>
-          )}
+          <button
+            onClick={prev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white shadow-md rounded-full flex items-center justify-center hover:bg-gray-50 transition"
+          >
+            <ChevronLeft size={24} className="text-[hsl(333,65%,59%)]" />
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white shadow-md rounded-full flex items-center justify-center hover:bg-gray-50 transition"
+          >
+            <ChevronRight size={24} className="text-[hsl(333,65%,59%)]" />
+          </button>
 
           <div className="overflow-hidden px-6">
             <div
@@ -489,25 +482,20 @@ const Testimonials: React.FC = () => {
               style={{
                 transform: isMobile
                   ? `translateX(-${currentIndex * 100}%)`
-                  : `translateX(-${currentIndex * (100 / (isMobile ? 1 : 3))}%)`,
+                  : `translateX(-${currentIndex * (100 / 3)}%)`,
               }}
             >
-              {isLoading && (
-                <div className="text-gray-600 w-full text-center p-10">Loading reviews...</div>
-              )}
-              {error && (
-                <div className="text-red-600 w-full text-center p-10">{error}</div>
-              )}
-              {!isLoading && !error && carouselReviews.map((t, i) => (
+              {/* This map only loops over the 9 hardcoded reviews */}
+              {[...carouselReviews, ...carouselReviews.slice(0, 3)].map((t, i) => (
                 <div
                   key={i}
                   className="bg-gradient-to-br from-[hsl(333,65%,95%)] to-[hsl(335,77%,95%)] rounded-2xl p-6 m-3 shadow-md border border-pink-100 flex-shrink-0"
                   style={{ width: isMobile ? "100%" : "33.333%" }}
                 >
-                  {/* --- MODIFIED: Dynamic Stars --- */}
+                  {/* --- REVERTED: Hardcoded 5 stars --- */}
                   <div className="flex mb-2">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} size={16} className={j < t.rating ? "text-yellow-400 fill-current" : "text-gray-300 fill-current"} />
+                      <Star key={j} size={16} className="text-yellow-400 fill-current" />
                     ))}
                   </div>
                   <blockquote className="text-gray-800 mb-4 text-base leading-relaxed font-medium">
@@ -524,7 +512,8 @@ const Testimonials: React.FC = () => {
                           <CheckCircle size={10} /> Verified
                         </span>
                       </div>
-                      {/* --- REMOVED Location --- */}
+                      {/* --- REVERTED: Added location back --- */}
+                      <div className="text-xs text-gray-500">{t.location}</div>
                     </div>
                   </div>
                 </div>
@@ -536,10 +525,10 @@ const Testimonials: React.FC = () => {
         {/* --- MODIFIED: All reviews modal trigger --- */}
         <button
           onClick={() => setIsModalOpen(true)}
-          disabled={isLoading || allReviews.length === 0}
+          disabled={isLoading && allReviews.length === 9} // Only disable if still loading
           className="mt-10 px-6 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50"
         >
-          See all reviews ({allReviews.length})
+          {isLoading ? "Loading reviews..." : `See all reviews (${allReviews.length})`}
         </button>
       </div>
 
@@ -560,15 +549,16 @@ const Testimonials: React.FC = () => {
             </div>
 
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* This now maps over ALL reviews (hardcoded + DB) */}
               {allReviews.map((r, i) => (
                 <div
                   key={i}
                   className="rounded-2xl border border-pink-100 bg-gradient-to-br from-rose-50 to-pink-50 p-4 shadow"
                 >
-                  {/* --- MODIFIED: Dynamic Stars --- */}
+                  {/* --- REVERTED: Hardcoded 5 stars --- */}
                   <div className="flex mb-2">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} size={14} className={j < r.rating ? "text-yellow-400 fill-current" : "text-gray-300 fill-current"} />
+                      <Star key={j} size={14} className="text-yellow-400 fill-current" />
                     ))}
                   </div>
                   <blockquote className="text-gray-800 text-sm mb-2">"{r.text}"</blockquote>
@@ -583,7 +573,8 @@ const Testimonials: React.FC = () => {
                           <CheckCircle size={10} /> Verified
                         </span>
                       </div>
-                      {/* --- REMOVED Location --- */}
+                      {/* --- REVERTED: Added location back --- */}
+                      <span className="text-gray-500">{r.location}</span>
                     </div>
                   </div>
                 </div>
