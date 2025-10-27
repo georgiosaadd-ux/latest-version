@@ -1,3 +1,5 @@
+// File: Testimonials.tsx
+
 import React from "react";
 import {
   Star,
@@ -11,18 +13,32 @@ import {
   VolumeX,
   ImageIcon,
 } from "lucide-react";
-import importedReviews from "./testimonials.json";
+// import importedReviews from "./testimonials.json"; // <-- REMOVED
+
+// 1. --- SUPABASE CLIENT DEFINITION ---
+import { createClient } from "@supabase/supabase-js";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// ------------------------------------
+
 
 /* =========================
    Types
    ========================= */
-type Review = { text: string; author: string; location: string };
+// UPDATED Review type to match our database
+type Review = { 
+  text: string; 
+  author: string; 
+  rating: number 
+};
+
 type MediaItem =
   | { url: string; type: "image" | "video"; filename: string }
   | { type: "placeholder"; label: string };
 
 /* =========================
-   Beautiful Stories Rail with Smooth Infinite Scroll
+   Stories Rail (No Changes)
    ========================= */
 const StoriesRail: React.FC = () => {
   const media = React.useMemo<MediaItem[]>(() => {
@@ -60,16 +76,14 @@ const StoriesRail: React.FC = () => {
     return items;
   }, []);
 
-  // For infinite scroll: triple the array
   const infiniteMedia = [...media, ...media, ...media];
-  const [centerIndex, setCenterIndex] = React.useState(media.length); // Start at middle copy
+  const [centerIndex, setCenterIndex] = React.useState(media.length);
   const [showLightbox, setShowLightbox] = React.useState(false);
   const [muted, setMuted] = React.useState(true);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [isInitialized, setIsInitialized] = React.useState(false);
 
-  // Initialize: scroll to center card immediately
   React.useEffect(() => {
     if (!scrollRef.current || isInitialized) return;
     
@@ -79,7 +93,6 @@ const StoriesRail: React.FC = () => {
     const offset = (containerWidth / 2) - (200 / 2); // Center the 200px card
     const scrollPosition = (centerIndex * cardWidth) - offset;
     
-    // Force immediate scroll without smooth behavior
     container.scrollLeft = scrollPosition;
     setIsInitialized(true);
   }, [centerIndex, isInitialized]);
@@ -95,7 +108,6 @@ const StoriesRail: React.FC = () => {
     
     const newIndex = Math.round((scrollLeft + offset) / cardWidth);
     
-    // Handle infinite scroll wrap-around
     if (newIndex <= media.length / 2) {
       const jumpToIndex = media.length + newIndex;
       setCenterIndex(jumpToIndex);
@@ -162,7 +174,7 @@ const StoriesRail: React.FC = () => {
         </div>
       </div>
 
-      {/* Stories rail - Drag to scroll naturally */}
+      {/* Stories rail */}
       <div className="relative max-w-6xl mx-auto overflow-hidden">
         <div
           ref={scrollRef}
@@ -190,7 +202,6 @@ const StoriesRail: React.FC = () => {
             const distance = Math.abs(idx - centerIndex);
             const isCenter = distance === 0;
             
-            // Center is sharp and full size, neighbors are blurred
             const scale = isCenter ? 1 : 0.88;
             const opacity = isCenter ? 1 : 0.4;
             const blur = isCenter ? 0 : 5;
@@ -213,7 +224,6 @@ const StoriesRail: React.FC = () => {
                 }}
                 aria-label="Open story"
               >
-                {/* Media / Placeholder */}
                 {m.type === "image" && "url" in m ? (
                   <img 
                     src={m.url} 
@@ -242,8 +252,6 @@ const StoriesRail: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Overlay & badge */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/5 to-transparent pointer-events-none" />
                 {m.type !== "placeholder" && (
                   <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
@@ -261,7 +269,7 @@ const StoriesRail: React.FC = () => {
         </div>
       </div>
 
-      {/* Lightbox */}
+      {/* Lightbox (No Changes) */}
       {showLightbox && (() => {
         const item = infiniteMedia[centerIndex];
         if (item.type === "placeholder") return null;
@@ -274,7 +282,6 @@ const StoriesRail: React.FC = () => {
             >
               <X size={18} />
             </button>
-
             <button
               onClick={prev}
               className="absolute left-3 md:left-5 w-10 h-10 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow"
@@ -289,7 +296,6 @@ const StoriesRail: React.FC = () => {
             >
               <ChevronRight size={18} />
             </button>
-
             <div className="w-full max-w-[420px] sm:max-w-[480px] md:max-w-[560px] lg:max-w-[680px] aspect-[9/16] rounded-2xl overflow-hidden bg-black shadow-2xl relative">
               {item.type === "video" ? (
                 <>
@@ -325,43 +331,68 @@ const StoriesRail: React.FC = () => {
   );
 };
 
-/* =========================
-   Main Testimonials section
-   ========================= */
+/* ========================================================
+   Main Testimonials section (MODIFIED)
+   ======================================================== */
 const Testimonials: React.FC = () => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [isPaused, setIsPaused] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  const testimonials: Review[] = [
-    { text: "OMG I didn't even know what gaslighting was until I read this. Now I can literally see every trick my ex used on me, and I'll never fall for it again.", author: "Layla, 27", location: "New York" },
-    { text: "I have to say this out loud: these books EXPOSED men. The love-bombing, the lies, the fake promises… I finally feel free.", author: "Karina, 32", location: "Miami" },
-    { text: "Honestly? It felt like someone grabbed my diary and explained it back to me. Every red flag, every confusion, all laid out. I can't believe I didn't see it sooner.", author: "Sofia, 29", location: "Toronto" },
-    { text: "I'm shaking writing this. I used to blame myself for everything. Reading this made me realize it wasn't me, it was his manipulation. Game over.", author: "Hannah, 35", location: "London" },
-    { text: "No one ever told me what 'charm to control' really means. This guide opened my eyes so wide, now I spot it in minutes.", author: "Amira, 26", location: "Dubai" },
-    { text: "I swear it felt like someone finally turned the lights on. I saw the patterns in every single guy I dated, and I felt my self-worth snap back.", author: "Vanessa, 31", location: "Sydney" },
-    { text: "I kept asking myself, why do I attract the wrong men? This literally answered it. And now I know how to stop the cycle. Life-changing.", author: "Jasmine, 28", location: "Berlin" },
-    { text: "I didn't want to admit it, but reading this made me cry. It exposed every silent treatment, every twisted word… and gave me the courage to walk away.", author: "Noura, 37", location: "Paris" },
-    { text: "This isn't just advice, it's survival. I finally see through the fake charm and empty promises. Honestly, I wish every woman could read this.", author: "Elena, 40", location: "Los Angeles" },
-  ];
+  // --- NEW: State for loading reviews from DB ---
+  const [allReviews, setAllReviews] = React.useState<Review[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const allReviews: Review[] = [...testimonials, ...(importedReviews as Review[])];
-
+  // --- NEW: useEffect to fetch reviews ---
   React.useEffect(() => {
-    if (isPaused) return;
-    const id = setInterval(() => setCurrentIndex((p) => (p + 1) % testimonials.length), 2500);
+    const fetchReviews = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const { data, error } = await supabase.functions.invoke('get-approved-reviews');
+        
+        if (error) {
+          // Handle non-2xx responses
+          if (error.context && error.context.message) {
+            throw new Error(error.context.message); 
+          }
+          throw new Error(error.message);
+        }
+
+        setAllReviews(data as Review[]);
+      } catch (err: any) {
+        console.error("Failed to fetch reviews:", err);
+        setError("Could not load reviews at this time.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReviews();
+  }, []); // Runs once on component mount
+
+  // --- MODIFIED: Use the first 9 reviews for the carousel ---
+  const carouselReviews = allReviews.slice(0, 9);
+
+  // --- MODIFIED: Use dynamic carousel length ---
+  React.useEffect(() => {
+    if (isPaused || carouselReviews.length === 0) return;
+    const id = setInterval(() => setCurrentIndex((p) => (p + 1) % carouselReviews.length), 2500);
     return () => clearInterval(id);
-  }, [isPaused, testimonials.length]);
+  }, [isPaused, carouselReviews.length]);
 
   const next = () => {
+    if (carouselReviews.length === 0) return;
     setIsPaused(true);
-    setCurrentIndex((p) => (p + 1) % testimonials.length);
+    setCurrentIndex((p) => (p + 1) % carouselReviews.length);
     setTimeout(() => setIsPaused(false), 5000);
   };
 
   const prev = () => {
+    if (carouselReviews.length === 0) return;
     setIsPaused(true);
-    setCurrentIndex((p) => (p - 1 + testimonials.length) % testimonials.length);
+    setCurrentIndex((p) => (p - 1 + carouselReviews.length) % carouselReviews.length);
     setTimeout(() => setIsPaused(false), 5000);
   };
 
@@ -380,20 +411,32 @@ const Testimonials: React.FC = () => {
     return () => mq.removeEventListener?.("change", set);
   }, []);
 
+  // --- NEW: Calculate average rating ---
+  const averageRating = React.useMemo(() => {
+    if (allReviews.length === 0) return 4.9; // Default fallback
+    const sum = allReviews.reduce((acc, r) => acc + r.rating, 0);
+    return (sum / allReviews.length).toFixed(1);
+  }, [allReviews]);
+
   return (
     <section className="py-16 bg-gradient-to-br from-rose-50 via-pink-50 to-cream overflow-hidden scroll-smooth">
       <div className="container mx-auto px-4 text-center">
-        {/* HEADER */}
+        {/* --- MODIFIED: HEADER --- */}
         <div className="mb-10">
           <div className="flex justify-center mb-3">
+            {/* Show stars based on average */}
             {[...Array(5)].map((_, i) => (
-              <Star key={i} size={40} className="text-[hsl(333,65%,59%)] fill-[hsl(333,65%,59%)]" />
+              <Star 
+                key={i} 
+                size={40} 
+                className={i < Math.floor(Number(averageRating)) ? "text-[hsl(333,65%,59%)] fill-[hsl(333,65%,59%)]" : "text-gray-300"}
+              />
             ))}
           </div>
 
           <div className="flex items-center justify-center gap-3 flex-wrap mb-1">
             <h3 className="text-5xl font-extrabold bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
-              4.9/5
+              {averageRating}/5
             </h3>
             <a
               href="#reviews-grid"
@@ -405,7 +448,10 @@ const Testimonials: React.FC = () => {
             </a>
           </div>
 
-          <p className="text-gray-600 font-semibold">Based on 2,000+ verified reviews</p>
+          {/* --- MODIFIED: Show dynamic review count --- */}
+          <p className="text-gray-600 font-semibold">
+            {isLoading ? "Loading verified reviews..." : `Based on ${allReviews.length} verified reviews`}
+          </p>
         </div>
 
         <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
@@ -414,26 +460,28 @@ const Testimonials: React.FC = () => {
         </h2>
         <p className="text-gray-600 mb-5">What helped them see the truth can help you too.</p>
 
-        {/* Beautiful Stories Rail */}
         <StoriesRail />
 
-        {/* Anchor */}
         <div id="reviews-grid" className="scroll-mt-24" />
 
-        {/* Written testimonials carousel */}
+        {/* --- MODIFIED: Written testimonials carousel --- */}
         <div className="relative max-w-6xl mx-auto mt-2">
-          <button
-            onClick={prev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white shadow-md rounded-full flex items-center justify-center hover:bg-gray-50 transition"
-          >
-            <ChevronLeft size={24} className="text-[hsl(333,65%,59%)]" />
-          </button>
-          <button
-            onClick={next}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white shadow-md rounded-full flex items-center justify-center hover:bg-gray-50 transition"
-          >
-            <ChevronRight size={24} className="text-[hsl(333,65%,59%)]" />
-          </button>
+          {carouselReviews.length > 0 && (
+            <>
+              <button
+                onClick={prev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white shadow-md rounded-full flex items-center justify-center hover:bg-gray-50 transition"
+              >
+                <ChevronLeft size={24} className="text-[hsl(333,65%,59%)]" />
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white shadow-md rounded-full flex items-center justify-center hover:bg-gray-50 transition"
+              >
+                <ChevronRight size={24} className="text-[hsl(333,65%,59%)]" />
+              </button>
+            </>
+          )}
 
           <div className="overflow-hidden px-6">
             <div
@@ -441,18 +489,25 @@ const Testimonials: React.FC = () => {
               style={{
                 transform: isMobile
                   ? `translateX(-${currentIndex * 100}%)`
-                  : `translateX(-${currentIndex * (100 / 3)}%)`,
+                  : `translateX(-${currentIndex * (100 / (isMobile ? 1 : 3))}%)`,
               }}
             >
-              {[...testimonials, ...testimonials.slice(0, 3)].map((t, i) => (
+              {isLoading && (
+                <div className="text-gray-600 w-full text-center p-10">Loading reviews...</div>
+              )}
+              {error && (
+                <div className="text-red-600 w-full text-center p-10">{error}</div>
+              )}
+              {!isLoading && !error && carouselReviews.map((t, i) => (
                 <div
                   key={i}
                   className="bg-gradient-to-br from-[hsl(333,65%,95%)] to-[hsl(335,77%,95%)] rounded-2xl p-6 m-3 shadow-md border border-pink-100 flex-shrink-0"
                   style={{ width: isMobile ? "100%" : "33.333%" }}
                 >
+                  {/* --- MODIFIED: Dynamic Stars --- */}
                   <div className="flex mb-2">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} size={16} className="text-yellow-400 fill-current" />
+                      <Star key={j} size={16} className={j < t.rating ? "text-yellow-400 fill-current" : "text-gray-300 fill-current"} />
                     ))}
                   </div>
                   <blockquote className="text-gray-800 mb-4 text-base leading-relaxed font-medium">
@@ -469,7 +524,7 @@ const Testimonials: React.FC = () => {
                           <CheckCircle size={10} /> Verified
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500">{t.location}</div>
+                      {/* --- REMOVED Location --- */}
                     </div>
                   </div>
                 </div>
@@ -478,22 +533,23 @@ const Testimonials: React.FC = () => {
           </div>
         </div>
 
-        {/* All reviews modal trigger */}
+        {/* --- MODIFIED: All reviews modal trigger --- */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="mt-10 px-6 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5"
+          disabled={isLoading || allReviews.length === 0}
+          className="mt-10 px-6 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50"
         >
-          See all reviews (2000+)
+          See all reviews ({allReviews.length})
         </button>
       </div>
 
-      {/* All reviews Modal */}
+      {/* --- MODIFIED: All reviews Modal --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-5xl max-h-[85vh] rounded-3xl overflow-y-auto shadow-2xl relative border border-pink-200">
             <div className="sticky top-0 bg-white/90 backdrop-blur-md flex justify-between items-center px-6 py-4 border-b">
               <h3 className="text-xl font-bold bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
-                All Verified Reviews
+                All Verified Reviews ({allReviews.length})
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -509,9 +565,10 @@ const Testimonials: React.FC = () => {
                   key={i}
                   className="rounded-2xl border border-pink-100 bg-gradient-to-br from-rose-50 to-pink-50 p-4 shadow"
                 >
+                  {/* --- MODIFIED: Dynamic Stars --- */}
                   <div className="flex mb-2">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} size={14} className="text-yellow-400 fill-current" />
+                      <Star key={j} size={14} className={j < r.rating ? "text-yellow-400 fill-current" : "text-gray-300 fill-current"} />
                     ))}
                   </div>
                   <blockquote className="text-gray-800 text-sm mb-2">"{r.text}"</blockquote>
@@ -526,7 +583,7 @@ const Testimonials: React.FC = () => {
                           <CheckCircle size={10} /> Verified
                         </span>
                       </div>
-                      <span className="text-gray-500">{r.location}</span>
+                      {/* --- REMOVED Location --- */}
                     </div>
                   </div>
                 </div>
