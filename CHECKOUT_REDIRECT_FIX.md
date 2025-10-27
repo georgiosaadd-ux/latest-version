@@ -138,3 +138,4 @@ Checks the `status` field to determine payment state:
 ✅ Graceful error handling
 ✅ TypeScript + React functional components
 
+
