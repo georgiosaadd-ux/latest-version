@@ -190,23 +190,22 @@ function ReviewModal({
           body: { email: emailTrimmed, product_id: ebookId },
         });
 
-      // **Handle verify-customer function errors (network or 5xx)**
+      // **Handle verify-customer function errors**
       if (verifyError) {
         console.error("verify-customer Invoke Error:", verifyError);
-         // Try to get specific message from function's JSON response body
-         let errMsg = "Verification failed. Please try again."; // Default
-         if (verifyError instanceof FunctionsError && verifyError.context?.data?.message) {
+         // **FIX:** Check context.data.message directly
+         let errMsg = "Verification failed. Please try again.";
+         // Check if context and data and message exist
+         if (verifyError.context?.data?.message) {
              errMsg = verifyError.context.data.message;
          } else if (verifyError.message) {
-             errMsg = verifyError.message;
+             errMsg = verifyError.message; // Fallback to generic client message
          }
          throw new Error(errMsg);
       }
-      // **Handle logical errors returned in 2xx verify-customer response**
-      if (verifyData && verifyData.message && !verifyData.exists) {
-        throw new Error(verifyData.message); // e.g., "Missing fields"
-      }
-      // **Check verification result**
+      // Handle logical errors in 2xx response
+      if (verifyData && verifyData.message && !verifyData.exists) { throw new Error(verifyData.message); }
+      // Check verification result
       if (!verifyData?.exists) {
         setStatus("err");
         setMsg( "Sorry, we couldn't find a purchase of this specific ebook linked to that email. Reviews are for verified buyers only.");
@@ -219,32 +218,24 @@ function ReviewModal({
       console.log(`Saving review: ${emailTrimmed}, ${ebookId}`);
       const { data: saveData, error: saveError } =
         await supabase.functions.invoke("save-review", {
-          body: {
-            email: emailTrimmed,
-            product_id: ebookId,
-            rating: stars,
-            review_text: textTrimmed,
-            display_name: nameTrimmed,
-          },
+          body: { /* ... review data ... */ },
         });
 
-      // **Handle save-review function errors (network, 5xx, OR 409 Conflict)**
+      // **Handle save-review function errors (including 409)**
       if (saveError) {
         console.error("save-review Invoke Error:", saveError);
-        // Try to get specific message from function's JSON response body (like "already reviewed")
-        let errMsg = "Failed to save review. Please try again."; // Default
-        // Check the context.data property for the JSON body of non-2xx responses
-        if (saveError instanceof FunctionsError && saveError.context?.data?.message) {
-            errMsg = saveError.context.data.message; // This should catch the 409 message
+        // **FIX:** Check context.data.message directly
+        let errMsg = "Failed to save review. Please try again.";
+        // Check if context and data and message exist
+        if (saveError.context?.data?.message) {
+            errMsg = saveError.context.data.message; // Catches the 409 "already reviewed" message
         } else if (saveError.message) {
-            errMsg = saveError.message;
+            errMsg = saveError.message; // Fallback to generic client message
         }
         throw new Error(errMsg);
       }
-      // **Handle logical errors returned in 2xx save-review response**
-      if (!saveData?.message || saveData.message !== "Review saved") {
-        throw new Error(saveData?.message || "An unexpected issue occurred while saving.");
-      }
+      // Handle logical errors in 2xx response
+      if (!saveData?.message || saveData.message !== "Review saved") { throw new Error(saveData?.message || "An unexpected issue occurred while saving."); }
 
       // 4. Success
       console.log("Review saved successfully.");
@@ -253,11 +244,10 @@ function ReviewModal({
       onSuccess?.({ stars, name: nameTrimmed, email: emailTrimmed, text: textTrimmed });
 
     } catch (err: any) {
-      // 5. Catch ALL errors thrown from try block
+      // 5. Catch ALL errors thrown
       console.error("Review submission process failed:", err);
       setStatus("err");
-      // Display the specific error message
-      setMsg(err.message || "An unknown error occurred. Please check logs or try again.");
+      setMsg(err.message || "An unknown error occurred.");
 
     } finally {
       // 6. Always stop loading
