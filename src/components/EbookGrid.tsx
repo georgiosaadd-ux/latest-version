@@ -19,10 +19,12 @@ import {
   Sparkles,
   User2,
 } from "lucide-react";
-import { EBook, CartItem } from "../types"; // Assuming these types are defined elsewhere
-import { activeCategories } from "../data/products"; // Assuming this data is available
-import PreviewModal from "./PreviewModal"; // Assuming this component exists
-import { formatCurrency } from "../utils/currency"; // Assuming this utility exists
+// --- Ensure correct import paths ---
+import { EBook, CartItem } from "../types"; // Make sure '../types' is correct
+import { activeCategories } from "../data/products"; // Make sure '../data/products' is correct
+import PreviewModal from "./PreviewModal"; // Make sure './PreviewModal' is correct
+import { formatCurrency } from "../utils/currency"; // Make sure '../utils/currency' is correct
+// ------------------------------------
 
 // 1. --- SUPABASE CLIENT DEFINITION ---
 import { createClient } from "@supabase/supabase-js";
@@ -30,9 +32,16 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // Basic check to ensure env variables are loaded
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Supabase URL or Anon Key is missing. Check your .env file.");
+  console.error("Supabase environment variables VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY are missing.");
+  // Optional: throw an error or handle appropriately
+  // throw new Error("Supabase environment variables are not configured.");
 }
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create client only if variables exist
+export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+// --- If Supabase client failed to initialize, add a check before using it ---
+if (!supabase) {
+    console.error("Supabase client could not be initialized. Check environment variables.");
+}
 // ------------------------------------
 
 /* ---------- Star rating (display) ---------- */
@@ -113,7 +122,7 @@ function ReviewSuccessOverlay({
 }
 
 /* ======================================================
-  REVIEW MODAL COMPONENT (WITH UPDATED HANDLE SUBMIT)
+  REVIEW MODAL COMPONENT (WITH IMPROVED ERROR HANDLING)
   ======================================================
 */
 function ReviewModal({
@@ -160,6 +169,14 @@ function ReviewModal({
 
   // --- UPDATED HANDLE SUBMIT FUNCTION ---
   const handleSubmit = async () => {
+     // --- Add check for Supabase client ---
+     if (!supabase) {
+        setMsg("Error connecting to the server. Please try again later.");
+        setStatus("err");
+        return;
+      }
+      // ------------------------------------
+
     setMsg("");
     // 1. Frontend Validation
     if (!name.trim()) {
@@ -184,7 +201,8 @@ function ReviewModal({
     const textTrimmed = text.trim();
 
     try {
-      // 2. Call 'verify-customer' function, now sending ebookId
+      // 2. Call 'verify-customer' function
+      console.log(`Verifying purchase for ${emailTrimmed} on product ${ebookId}`); // Debug log
       const { data: verifyData, error: verifyError } =
         await supabase.functions.invoke("verify-customer", {
           body: {
@@ -193,34 +211,33 @@ function ReviewModal({
           },
         });
 
-      // Handle potential function errors (like network issues or 500s from the function)
+      // --- IMPROVED ERROR HANDLING for verify-customer ---
       if (verifyError) {
-         // Check if the error has a specific message from the function's response
-        if (verifyError.context && verifyError.context.message) {
-          throw new Error(verifyError.context.message);
-        }
-        // Fallback generic error if no specific message is found
-        throw new Error(`Verification call failed: ${verifyError.message}`);
+        console.error("verify-customer Error:", verifyError); // Log the full error
+        // Check context for specific message, otherwise use generic function error
+        const specificMessage = verifyError.context?.message || `Verification Edge Function failed. Status: ${verifyError.context?.status || 'unknown'}`;
+        throw new Error(specificMessage);
       }
+      // ----------------------------------------------------
 
-      // Handle logical errors returned in the data payload (like "Missing fields")
-      // Check verifyData itself exists before accessing properties
-      if (verifyData && verifyData.message && !verifyData.exists) { // Added !verifyData.exists check
+      // Handle logical errors returned in the data payload
+      if (verifyData && verifyData.message && !verifyData.exists) {
         throw new Error(verifyData.message);
       }
 
       // 3. Check if the purchase exists for *this* ebook
       if (!verifyData || !verifyData.exists) {
         setStatus("err");
-        // Updated error message to be more specific
         setMsg(
           "Sorry, we couldn't find a purchase of this specific ebook linked to that email. Reviews are for verified buyers only."
         );
         setSubmitting(false);
         return;
       }
+      console.log("Purchase verified."); // Debug log
 
       // 4. If verification passed, proceed to save the review
+      console.log(`Saving review for ${emailTrimmed} on product ${ebookId}`); // Debug log
       const { data: saveData, error: saveError } =
         await supabase.functions.invoke("save-review", {
           body: {
@@ -232,13 +249,13 @@ function ReviewModal({
           },
         });
 
-      // Handle save errors (network or function 500s)
+      // --- IMPROVED ERROR HANDLING for save-review ---
       if (saveError) {
-         if (saveError.context && saveError.context.message) {
-          throw new Error(saveError.context.message);
-        }
-        throw new Error(`Save review call failed: ${saveError.message}`);
+         console.error("save-review Error:", saveError); // Log the full error
+         const specificMessage = saveError.context?.message || `Save Review Edge Function failed. Status: ${saveError.context?.status || 'unknown'}`;
+         throw new Error(specificMessage);
       }
+      // -----------------------------------------------
 
       // Handle logical errors from save function's response data
       if (!saveData || saveData.message !== "Review saved") {
@@ -246,6 +263,7 @@ function ReviewModal({
       }
 
       // 5. Success!
+      console.log("Review saved successfully."); // Debug log
       setStatus("ok");
       setMsg("Your review was submitted successfully.");
       onSuccess?.({
@@ -257,10 +275,10 @@ function ReviewModal({
 
     } catch (err: any) {
       // 6. Catch all errors (from verify or save steps)
-      console.error("Review submission error:", err);
+      console.error("Review submission process failed:", err); // Log the caught error
       setStatus("err");
-      // Display the specific error message thrown
-      setMsg(err.message || "An unexpected error occurred. Please try again.");
+      // Display the specific error message thrown by the try block
+      setMsg(err.message || "An unexpected error occurred. Please check logs or try again.");
 
     } finally {
       // 7. Always stop loading indicator
@@ -418,7 +436,7 @@ const CARD_FIXED_H = "h-[600px]";
 
 interface EbookGridProps {
   ebooks: EBook[];
-  onAddToCart: (item: CartItem) => void;
+  onAddToCart: (item: CartItem) => void; // Expects CartItem
   selectedCategory?: string;
 }
 
@@ -426,7 +444,7 @@ const Card: React.FC<{
   ebook: EBook;
   isSelected?: boolean;
   onPreview: (e: EBook) => void;
-  onAddToCart: (e: EBook) => void;
+  onAddToCart: (e: EBook) => void; // Specific handler passed down
   onWriteReview: (e: EBook) => void;
   emailInputs?: Record<string, string>;
   setEmailInputs?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -438,7 +456,7 @@ const Card: React.FC<{
   ebook,
   isSelected,
   onPreview,
-  onAddToCart,
+  onAddToCart, // Use the specific handler passed down
   onWriteReview,
   emailInputs = {},
   setEmailInputs,
@@ -587,13 +605,15 @@ const Card: React.FC<{
               </div>
             )
           ) : (
+             // --- CORRECTED: Call onAddToCart passed from Card props ---
             <button
-              onClick={() => onAddToCart(ebook)}
+              onClick={() => onAddToCart(ebook)} // Use the prop directly
               className="w-full bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white py-3 rounded-full font-semibold hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               <ShoppingCart size={18} />
               Add to Cart
             </button>
+             // ---------------------------------------------------------
           )}
         </div>
       </div>
@@ -667,7 +687,7 @@ const MobileCarousel: React.FC<{
      // Check if the index actually changed to avoid unnecessary re-renders
      setIndex(prevIndex => prevIndex !== closestIndex ? closestIndex : prevIndex);
 
-   }, []);
+   }, []); // Removed dependency array as it doesn't need external variables
 
 
   // Previous/Next button handlers
@@ -711,7 +731,7 @@ const MobileCarousel: React.FC<{
         </div>
       </div>
 
-      {/* --- CORRECTED: Navigation Buttons --- */}
+      {/* Navigation Buttons */}
       {ebooks.length > 1 && (
         <> {/* Use Fragment */}
           <button
@@ -736,9 +756,8 @@ const MobileCarousel: React.FC<{
           </button>
         </>
       )}
-      {/* --- END CORRECTION --- */}
 
-      {/* --- CORRECTED: Navigation Dots --- */}
+      {/* Navigation Dots */}
       {ebooks.length > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4"> {/* Dots container */}
           {ebooks.map((_, idx) => (
@@ -753,18 +772,16 @@ const MobileCarousel: React.FC<{
           ))}
         </div>
       )}
-      {/* --- END CORRECTION --- */}
-
     </div>
   );
 };
 
 
 /* ======================================================
-  MAIN EBOOK GRID COMPONENT (No major changes needed here)
+  MAIN EBOOK GRID COMPONENT
   ======================================================
 */
-const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
+const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => { // onAddToCart expects CartItem
   const [previewEbook, setPreviewEbook] = useState<EBook | null>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewingEbook, setReviewingEbook] = useState<EBook | null>(null);
@@ -778,7 +795,28 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
   const [waitlistError, setWaitlistError] = useState<Record<string, string>>({});
   const validateEmail = (e: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-  const handleAddToCartInternal = (ebook: EBook) => onAddToCart({ product: ebook, quantity: 1 }); // Map EBook to CartItem
+  // --- CORRECTED: Wrapper for Add to Cart ---
+  // This function takes an EBook from the Card and converts it to the CartItem structure expected by the parent
+  const handleAddToCartInternal = (ebook: EBook) => {
+    // Basic check: Ensure the ebook object and price are valid
+    if (!ebook || typeof ebook.price !== 'number') {
+        console.error("Invalid ebook data passed to handleAddToCartInternal:", ebook);
+        return; // Prevent adding invalid item
+    }
+
+    const cartItem: CartItem = {
+        id: ebook.id, // Use ebook ID as the unique ID for the cart item
+        item: ebook,
+        quantity: 1,
+        type: 'ebook', // Specify the type
+        // Add metadata if needed, otherwise it can be empty or omitted if your CartItem type allows
+        // metadata: {}
+    };
+    console.log("Adding to cart:", cartItem); // Debug log
+    onAddToCart(cartItem); // Call the prop passed from the parent with the correct structure
+  };
+  // ------------------------------------------
+
   const openPreview = (ebook: EBook) => setPreviewEbook(ebook);
   const closePreview = () => setPreviewEbook(null);
   const openReviewModal = (ebook: EBook) => { setReviewingEbook(ebook); setReviewModalOpen(true); };
@@ -787,6 +825,12 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
 
   // Keep the corrected handleNotifyMe
   const handleNotifyMe = async (ebook: EBook) => {
+    // --- Add check for Supabase client ---
+    if (!supabase) {
+        setWaitlistError((prev) => ({ ...prev, [ebook.id]: "Server connection error." }));
+        return;
+    }
+    // ------------------------------------
     const email = emailInputs[ebook.id];
     if (!email || !validateEmail(email)) {
       setWaitlistError((prev) => ({ ...prev, [ebook.id]: "Please enter a valid email." }));
@@ -796,11 +840,18 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
     setSubmittingWaitlist((prev) => ({ ...prev, [ebook.id]: true }));
     try {
       const { data, error } = await supabase.functions.invoke("add-to-waitlist", { body: { email: email.trim().toLowerCase(), ebook_id: ebook.id } });
-      if (error) { if (error.context?.message) throw new Error(error.context.message); throw error; }
-      if (data.message.includes("Success")) { setSubmittedEmails((prev) => ({ ...prev, [ebook.id]: true })); }
-      else { throw new Error(data.message || "Unknown error"); }
-    } catch (err: any) { setWaitlistError((prev) => ({ ...prev, [ebook.id]: err.message })); }
-    finally { setSubmittingWaitlist((prev) => ({ ...prev, [ebook.id]: false })); }
+      if (error) { if (error.context?.message) throw new Error(error.context.message); throw new Error(`Waitlist function failed: ${error.message}`); } // More specific error
+      if (data.message.includes("Success") || data.message.includes("already on the waitlist")) { // Handle "already on list" as success
+          setSubmittedEmails((prev) => ({ ...prev, [ebook.id]: true }));
+      } else {
+          throw new Error(data.message || "Unknown error adding to waitlist.");
+      }
+    } catch (err: any) {
+      console.error("handleNotifyMe error:", err); // Log error
+      setWaitlistError((prev) => ({ ...prev, [ebook.id]: err.message }));
+    } finally {
+      setSubmittingWaitlist((prev) => ({ ...prev, [ebook.id]: false }));
+    }
   };
 
   const getEbooksByCategory = (category: string) => ebooks.filter((ebook) => ebook.category === category);
@@ -816,36 +867,39 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
   useEffect(() => {
     const handleScroll = () => {
       // Sticky tabs logic
-      const heroSection = document.getElementById("ebooks"); // Target the main section
-      const heroBottom = heroSection ? heroSection.offsetTop + heroSection.offsetHeight : 0;
-      // Adjust offset as needed, e.g., show tabs earlier/later
-      setShowStickyTabs(window.scrollY > (heroBottom - window.innerHeight / 2)); // Example offset
+      const mainSection = document.getElementById("ebooks"); // Target the main section by ID
+      const mainSectionTop = mainSection ? mainSection.offsetTop : 0;
+      // Show sticky tabs when scrolled past the top of the main section (adjust offset as needed)
+      const offsetToShow = 100; // Pixels past the top of the section
+      setShowStickyTabs(window.scrollY > mainSectionTop + offsetToShow);
 
       // Active tab based on scroll position
       const manipulationSection = document.getElementById("manipulation-toxic");
       const datingSection = document.getElementById("dating-red-flags");
       const selfSection = document.getElementById("self-empowering");
       const scrollY = window.scrollY;
-      const offset = 150; // Offset from top to trigger tab change
+      const offsetForActive = 150; // Offset from top to trigger tab change
 
-      if (selfSection && scrollY >= selfSection.offsetTop - offset) setActiveTab("self-empowering");
-      else if (datingSection && scrollY >= datingSection.offsetTop - offset) setActiveTab("dating-red-flags");
-      else if (manipulationSection && scrollY >= manipulationSection.offsetTop - offset) setActiveTab("manipulation-toxic");
-      // Optional: Add a condition to reset if scrolling above the first section
-      // else if (manipulationSection && scrollY < manipulationSection.offsetTop - offset) setActiveTab(""); // Reset if needed
+      // Check sections exist before accessing offsetTop
+      if (selfSection && scrollY >= selfSection.offsetTop - offsetForActive) setActiveTab("self-empowering");
+      else if (datingSection && scrollY >= datingSection.offsetTop - offsetForActive) setActiveTab("dating-red-flags");
+      else if (manipulationSection && scrollY >= manipulationSection.offsetTop - offsetForActive) setActiveTab("manipulation-toxic");
+      // Optional: Reset if scrolling above the first section
+      else if (manipulationSection && scrollY < manipulationSection.offsetTop - offsetForActive) setActiveTab(""); // Reset active tab
+
     };
     window.addEventListener("scroll", handleScroll, { passive: true }); // Use passive listener
     return () => window.removeEventListener("scroll", handleScroll);
   }, []); // Empty dependency array, runs once
 
 
-  // Render Card function remains the same
+  // Render Card function now passes the internal handler
   const renderCard = (ebook: EBook, isSelected: boolean) => (
     <Card
       ebook={ebook}
       isSelected={isSelected}
       onPreview={openPreview}
-      onAddToCart={handleAddToCartInternal} // Use the internal wrapper
+      onAddToCart={handleAddToCartInternal} // --- Pass the internal wrapper ---
       onWriteReview={openReviewModal}
       emailInputs={emailInputs}
       setEmailInputs={setEmailInputs}
@@ -962,7 +1016,7 @@ const EbookGrid: React.FC<EbookGridProps> = ({ ebooks, onAddToCart }) => {
            <PreviewModal
               ebook={previewEbook}
               onClose={closePreview}
-              onAddToCart={handleAddToCartInternal} // Use internal wrapper
+              onAddToCart={handleAddToCartInternal} // Use internal wrapper here too
            />
          )}
        </div>
