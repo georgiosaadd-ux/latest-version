@@ -26,7 +26,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 /* =========================
    Types
    ========================= */
-// --- REVERTED to original Review type ---
 type Review = { text: string; author: string; location: string };
 
 type MediaItem =
@@ -331,7 +330,7 @@ const StoriesRail: React.FC = () => {
    Main Testimonials section (MODIFIED)
    ======================================================== */
 
-// --- ADDED: Your 9 hardcoded reviews for the carousel ---
+// Your 9 hardcoded reviews for the carousel
 const carouselReviews: Review[] = [
   { text: "OMG I didn't even know what gaslighting was until I read this. Now I can literally see every trick my ex used on me, and I'll never fall for it again.", author: "Layla, 27", location: "New York" },
   { text: "I have to say this out loud: these books EXPOSED men. The love-bombing, the lies, the fake promises… I finally feel free.", author: "Karina, 32", location: "Miami" },
@@ -350,13 +349,12 @@ const Testimonials: React.FC = () => {
   const [isPaused, setIsPaused] = React.useState(false);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   
-  // --- MODIFIED: State for reviews ---
-  // All reviews (modal) starts with the 9 hardcoded ones
+  // State for reviews: starts with the 9 hardcoded, adds DB reviews later
   const [allReviews, setAllReviews] = React.useState<Review[]>(carouselReviews);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(true); // Still useful for button state
   const [error, setError] = React.useState<string | null>(null);
   
-  // --- NEW: useEffect to fetch DB reviews ---
+  // Fetch DB reviews on mount
   React.useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -371,12 +369,12 @@ const Testimonials: React.FC = () => {
         }
 
         const dbReviews = data as Review[];
-        // Combine the 9 hardcoded reviews with all DB reviews
+        // Combine hardcoded + DB reviews for the modal
         setAllReviews([...carouselReviews, ...dbReviews]);
 
       } catch (err: any) {
         console.error("Failed to fetch reviews:", err);
-        setError("Could not load reviews at this time.");
+        setError("Could not load additional reviews at this time."); // Modified error message
       } finally {
         setIsLoading(false);
       }
@@ -385,13 +383,12 @@ const Testimonials: React.FC = () => {
   }, []); // Runs once on component mount
 
   
-  // Carousel auto-scroll logic
+  // Carousel auto-scroll logic (unchanged)
   React.useEffect(() => {
     if (isPaused) return;
-    // Carousel length is fixed to the 9 hardcoded reviews
     const id = setInterval(() => setCurrentIndex((p) => (p + 1) % carouselReviews.length), 2500);
     return () => clearInterval(id);
-  }, [isPaused]); // Removed carouselReviews.length, it's constant
+  }, [isPaused]); 
 
   const next = () => {
     setIsPaused(true);
@@ -423,7 +420,7 @@ const Testimonials: React.FC = () => {
   return (
     <section className="py-16 bg-gradient-to-br from-rose-50 via-pink-50 to-cream overflow-hidden scroll-smooth">
       <div className="container mx-auto px-4 text-center">
-        {/* --- HEADER (Reverted to original static 4.9/5) --- */}
+        {/* --- HEADER (Reverted to original static 4.9/5 and 2000+ count) --- */}
         <div className="mb-10">
           <div className="flex justify-center mb-3">
             {[...Array(5)].map((_, i) => (
@@ -445,9 +442,9 @@ const Testimonials: React.FC = () => {
             </a>
           </div>
 
-          {/* --- MODIFIED: Show dynamic review count --- */}
+          {/* --- REVERTED: Hardcoded 2000+ count --- */}
           <p className="text-gray-600 font-semibold">
-            {isLoading ? "Loading reviews..." : `Based on ${allReviews.length}+ verified reviews`}
+            Based on 2,000+ verified reviews
           </p>
         </div>
 
@@ -461,7 +458,7 @@ const Testimonials: React.FC = () => {
 
         <div id="reviews-grid" className="scroll-mt-24" />
 
-        {/* --- MODIFIED: Written testimonials carousel --- */}
+        {/* --- Written testimonials carousel (No changes from previous) --- */}
         <div className="relative max-w-6xl mx-auto mt-2">
           <button
             onClick={prev}
@@ -485,14 +482,12 @@ const Testimonials: React.FC = () => {
                   : `translateX(-${currentIndex * (100 / 3)}%)`,
               }}
             >
-              {/* This map only loops over the 9 hardcoded reviews */}
               {[...carouselReviews, ...carouselReviews.slice(0, 3)].map((t, i) => (
                 <div
                   key={i}
                   className="bg-gradient-to-br from-[hsl(333,65%,95%)] to-[hsl(335,77%,95%)] rounded-2xl p-6 m-3 shadow-md border border-pink-100 flex-shrink-0"
                   style={{ width: isMobile ? "100%" : "33.333%" }}
                 >
-                  {/* --- REVERTED: Hardcoded 5 stars --- */}
                   <div className="flex mb-2">
                     {[...Array(5)].map((_, j) => (
                       <Star key={j} size={16} className="text-yellow-400 fill-current" />
@@ -512,7 +507,6 @@ const Testimonials: React.FC = () => {
                           <CheckCircle size={10} /> Verified
                         </span>
                       </div>
-                      {/* --- REVERTED: Added location back --- */}
                       <div className="text-xs text-gray-500">{t.location}</div>
                     </div>
                   </div>
@@ -522,23 +516,23 @@ const Testimonials: React.FC = () => {
           </div>
         </div>
 
-        {/* --- MODIFIED: All reviews modal trigger --- */}
+        {/* --- All reviews modal trigger (Reverted to 2000+ text) --- */}
         <button
           onClick={() => setIsModalOpen(true)}
-          disabled={isLoading && allReviews.length === 9} // Only disable if still loading
+          disabled={isLoading && allReviews.length === 9} 
           className="mt-10 px-6 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 disabled:opacity-50"
         >
-          {isLoading ? "Loading reviews..." : `See all reviews (${allReviews.length})`}
+          See all reviews (2000+) {/* <-- REVERTED TEXT */}
         </button>
       </div>
 
-      {/* --- MODIFIED: All reviews Modal --- */}
+      {/* --- All reviews Modal (Reverted text and stars) --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-5xl max-h-[85vh] rounded-3xl overflow-y-auto shadow-2xl relative border border-pink-200">
             <div className="sticky top-0 bg-white/90 backdrop-blur-md flex justify-between items-center px-6 py-4 border-b">
               <h3 className="text-xl font-bold bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(297,22%,24%)] bg-clip-text text-transparent">
-                All Verified Reviews ({allReviews.length})
+                All Verified Reviews {/* <-- Removed dynamic count */}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -549,13 +543,12 @@ const Testimonials: React.FC = () => {
             </div>
 
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* This now maps over ALL reviews (hardcoded + DB) */}
+              {error && <div className="text-red-600 col-span-full text-center">{error}</div>}
               {allReviews.map((r, i) => (
                 <div
                   key={i}
                   className="rounded-2xl border border-pink-100 bg-gradient-to-br from-rose-50 to-pink-50 p-4 shadow"
                 >
-                  {/* --- REVERTED: Hardcoded 5 stars --- */}
                   <div className="flex mb-2">
                     {[...Array(5)].map((_, j) => (
                       <Star key={j} size={14} className="text-yellow-400 fill-current" />
@@ -573,7 +566,6 @@ const Testimonials: React.FC = () => {
                           <CheckCircle size={10} /> Verified
                         </span>
                       </div>
-                      {/* --- REVERTED: Added location back --- */}
                       <span className="text-gray-500">{r.location}</span>
                     </div>
                   </div>
