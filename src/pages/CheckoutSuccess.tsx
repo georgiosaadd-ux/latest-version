@@ -21,7 +21,7 @@ const CheckoutSuccess: React.FC = () => {
 
     const verifyPayment = async () => {
       try {
-        const res = await fetch(`/functions/v1/verify-payment?session_id=${sessionId}`);
+        const res = await fetch(`${supabaseUrl}/functions/v1/verify-payment?session_id=${sessionId}`);
         const data = await res.json();
 
         if (data.status === 'succeeded') setPaymentStatus('success');
