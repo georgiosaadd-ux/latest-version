@@ -167,93 +167,132 @@ function ReviewModal({
   const validateEmail = (e: string): boolean =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-// --- **REPLACED** HANDLE SUBMIT FUNCTION ---
-  const handleSubmit = async () => {
-     if (!supabase) { setMsg("Server connection error."); setStatus("err"); return; }
+// --- **REPLACED AGAIN** HANDLE SUBMIT FUNCTION ---
+const handleSubmit = async () => {
+  if (!supabase) { setMsg("Server connection error."); setStatus("err"); return; }
 
-    setMsg("");
-    // 1. Frontend Validation (Keep as is)
-    if (!name.trim()) { setStatus("err"); setMsg("Please enter display name."); return; }
-    if (!validateEmail(email)) { setStatus("err"); setMsg("Please enter a valid email."); return; }
-    if (text.trim().length < 10) { setStatus("err"); setMsg("Please write at least 10 characters."); return; }
+  setMsg("");
+  // 1. Frontend Validation
+  if (!name.trim()) { setStatus("err"); setMsg("Please enter display name."); return; }
+  if (!validateEmail(email)) { setStatus("err"); setMsg("Please enter a valid email."); return; }
+  if (text.trim().length < 10) { setStatus("err"); setMsg("Please write at least 10 characters."); return; }
 
-    setSubmitting(true);
-    const emailTrimmed = email.trim().toLowerCase();
-    const nameTrimmed = name.trim();
-    const textTrimmed = text.trim();
+  setSubmitting(true);
+  const emailTrimmed = email.trim().toLowerCase();
+  const nameTrimmed = name.trim();
+  const textTrimmed = text.trim();
 
-    try {
-      // 2. Verify Purchase
-      console.log(`Verifying purchase: ${emailTrimmed}, ${ebookId}`);
-      const { data: verifyData, error: verifyError } =
-        await supabase.functions.invoke("verify-customer", {
-          body: { email: emailTrimmed, product_id: ebookId },
-        });
+  try {
+    // 2. Verify Purchase
+    console.log(`Verifying purchase: ${emailTrimmed}, ${ebookId}`);
+    const { data: verifyData, error: verifyError } =
+      await supabase.functions.invoke("verify-customer", {
+        body: { email: emailTrimmed, product_id: ebookId },
+      });
 
-      // **Handle verify-customer function errors**
-      if (verifyError) {
-        console.error("verify-customer Invoke Error:", verifyError);
-         // **FIX:** Check context.data.message directly
-         let errMsg = "Verification failed. Please try again.";
-         // Check if context and data and message exist
-         if (verifyError.context?.data?.message) {
-             errMsg = verifyError.context.data.message;
-         } else if (verifyError.message) {
-             errMsg = verifyError.message; // Fallback to generic client message
-         }
-         throw new Error(errMsg);
-      }
-      // Handle logical errors in 2xx response
-      if (verifyData && verifyData.message && !verifyData.exists) { throw new Error(verifyData.message); }
-      // Check verification result
-      if (!verifyData?.exists) {
-        setStatus("err");
-        setMsg( "Sorry, we couldn't find a purchase of this specific ebook linked to that email. Reviews are for verified buyers only.");
-        setSubmitting(false);
-        return;
-      }
-      console.log("Purchase verified.");
-
-      // 3. Save Review
-      console.log(`Saving review: ${emailTrimmed}, ${ebookId}`);
-      const { data: saveData, error: saveError } =
-        await supabase.functions.invoke("save-review", {
-          body: { /* ... review data ... */ },
-        });
-
-      // **Handle save-review function errors (including 409)**
-      if (saveError) {
-        console.error("save-review Invoke Error:", saveError);
-        // **FIX:** Check context.data.message directly
-        let errMsg = "Failed to save review. Please try again.";
-        // Check if context and data and message exist
-        if (saveError.context?.data?.message) {
-            errMsg = saveError.context.data.message; // Catches the 409 "already reviewed" message
-        } else if (saveError.message) {
-            errMsg = saveError.message; // Fallback to generic client message
+    // **Handle verify-customer function errors**
+    if (verifyError) {
+      console.error("verify-customer Invoke Error:", verifyError);
+      let errMsg = "Verification failed. Please try again.";
+      
+      // Read Response body if available
+      if (verifyError.context instanceof Response) {
+        try {
+          const responseData = await verifyError.context.json();
+          if (responseData?.message) {
+            errMsg = responseData.message;
+          }
+        } catch (parseError) {
+          console.error("Failed to parse verify error response:", parseError);
         }
-        throw new Error(errMsg);
       }
-      // Handle logical errors in 2xx response
-      if (!saveData?.message || saveData.message !== "Review saved") { throw new Error(saveData?.message || "An unexpected issue occurred while saving."); }
-
-      // 4. Success
-      console.log("Review saved successfully.");
-      setStatus("ok");
-      setMsg("Your review was submitted successfully.");
-      onSuccess?.({ stars, name: nameTrimmed, email: emailTrimmed, text: textTrimmed });
-
-    } catch (err: any) {
-      // 5. Catch ALL errors thrown
-      console.error("Review submission process failed:", err);
-      setStatus("err");
-      setMsg(err.message || "An unknown error occurred.");
-
-    } finally {
-      // 6. Always stop loading
-      setSubmitting(false);
+      
+      if (errMsg === "Verification failed. Please try again." && verifyError.message) {
+        errMsg = verifyError.message;
+      }
+      
+      throw new Error(errMsg);
     }
-  };
+
+    // **Check verification result**
+    if (!verifyData?.exists) {
+      console.log("Purchase not found for this email/product combination");
+      setStatus("err");
+      setMsg("Sorry, we couldn't find a purchase of this specific ebook linked to that email. Reviews are for verified buyers only.");
+      setSubmitting(false);
+      return;
+    }
+    console.log("Purchase verified.");
+
+    // 3. Save Review
+    console.log(`Saving review: ${emailTrimmed}, ${ebookId}`);
+    const { data: saveData, error: saveError } =
+      await supabase.functions.invoke("save-review", {
+        body: {
+          email: emailTrimmed,
+          product_id: ebookId,
+          rating: stars,
+          review_text: textTrimmed,
+          display_name: nameTrimmed,
+        },
+      });
+
+    // **Handle save-review function errors (including 409)**
+    if (saveError) {
+      console.log("=== saveError detected ===");
+      let errMsg = "Failed to save review. Please try again.";
+      
+      // The response body is a ReadableStream - we need to read it
+      if (saveError.context instanceof Response) {
+        try {
+          const responseData = await saveError.context.json();
+          console.log("Parsed response data:", responseData);
+          if (responseData?.message) {
+            errMsg = responseData.message;
+          }
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+        }
+      }
+      
+      // Fallback to generic message
+      if (errMsg === "Failed to save review. Please try again." && saveError.message) {
+        errMsg = saveError.message;
+      }
+      
+      console.log("Final error message:", errMsg);
+      throw new Error(errMsg);
+    }
+
+    // Handle unexpected 2xx response format
+    if (!saveData?.message || saveData.message !== "Review saved") {
+      throw new Error(saveData?.message || "An unexpected issue occurred while saving.");
+    }
+
+    // 4. Success
+    console.log("Review saved successfully.");
+    setStatus("ok");
+    setMsg("Your review was submitted successfully.");
+    onSuccess?.({ stars, name: nameTrimmed, email: emailTrimmed, text: textTrimmed });
+
+  } catch (err: any) {
+    // 5. Catch ALL errors
+    console.error("Review submission process failed:", err);
+    setStatus("err");
+
+    let displayMessage = "An unknown error occurred. Please try again.";
+    
+    if (err.message) {
+      displayMessage = err.message;
+    }
+
+    setMsg(displayMessage);
+
+  } finally {
+    // 6. Always stop loading
+    setSubmitting(false);
+  }
+};
   // --- END OF REPLACED HANDLE SUBMIT ---
 
 
