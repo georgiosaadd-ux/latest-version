@@ -22,6 +22,7 @@ export interface Bundle {
   savings: number;
   ebookIds: string[];
   ebooks: EBook[];
+  isCustom?: boolean;
 }
 
 export interface CartItem {
@@ -33,8 +34,9 @@ export interface CartItem {
     subtotal?: number;
     discount?: number;
     freeCount?: number;
-    pricingMode?: 'bundle_pre_discounted';
-    originalItems?: Array<{ title: string; price: number }>;
+    freeIds?: string[];
+    pricingMode?: 'bundle_pre_discounted' | 'bundle_calculated';
+    originalItems?: Array<{ id: string; title: string; price: number }>;
   };
 }
 

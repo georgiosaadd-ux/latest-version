@@ -1,5 +1,6 @@
 import React from 'react';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, LogIn } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import CartBadge from './CartBadge';
 
 interface HeaderProps {
@@ -8,9 +9,15 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ cartItemCount, onCartClick }) => {
+  const navigate = useNavigate();
+  
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) element.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleLoginClick = () => {
+    navigate('/portal/login');
   };
 
   return (
@@ -43,14 +50,25 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onCartClick }) => {
             </button>
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            {/* Login Button - Desktop */}
+            <button
+              onClick={handleLoginClick}
+              className="hidden md:flex items-center gap-2 bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-5 py-2 rounded-full font-semibold hover:shadow-lg transition-all"
+              aria-label="Login"
+            >
+              <LogIn size={18} />
+              <span>Login</span>
+            </button>
+
+            {/* Cart Button */}
             <button
               onClick={onCartClick}
               className="relative flex items-center gap-2 text-gray-600 transition-colors hover:text-[hsl(333,65%,59%)]"
               aria-label="Open cart"
             >
               <ShoppingBag size={20} />
-              <span>Cart</span>
+              <span className="hidden sm:inline">Cart</span>
               <CartBadge count={cartItemCount} />
             </button>
           </div>
@@ -60,12 +78,14 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onCartClick }) => {
       {/* Mobile bottom bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="flex items-center">
-          {/* eBooks */}
+          {/* Login - Mobile */}
           <button
-            onClick={() => scrollToSection('ebooks')}
-            className="flex-1 py-3 text-center text-sm font-medium text-gray-600 hover:text-[hsl(333,65%,59%)]"
+            onClick={handleLoginClick}
+            className="flex-1 py-3 flex flex-col items-center justify-center text-gray-600 hover:text-[hsl(333,65%,59%)]"
+            aria-label="Login"
           >
-            eBooks
+            <LogIn size={20} />
+            <span className="text-xs mt-1">Login</span>
           </button>
 
           {/* Bundles (bigger + lifted + vivid wave + bounce-shake) */}
@@ -78,15 +98,16 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onCartClick }) => {
                        shadow-xl shadow-[hsl(333,65%,59%)/35%] relative rounded-t-xl
                        translate-y-[-14px] overflow-hidden"
           >
-            <span className="inline-block animate-lift-fastshake">Bundle and Save!</span>
+            <span className="inline-block animate-lift-fastshake">Bundle & Save!</span>
           </button>
 
           {/* Checkout */}
           <button
             onClick={onCartClick}
-            className="flex-1 py-3 text-center text-sm font-medium text-gray-600 hover:text-[hsl(333,65%,59%)] relative"
+            className="flex-1 py-3 flex flex-col items-center justify-center text-gray-600 hover:text-[hsl(333,65%,59%)] relative"
           >
-            Checkout
+            <ShoppingBag size={20} />
+            <span className="text-xs mt-1">Cart</span>
             <CartBadge count={cartItemCount} />
           </button>
         </div>
