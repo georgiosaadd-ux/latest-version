@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 // --- THIS LINE IS NOW FIXED ---
-import { supabase } from '../supabaseClient.ts'; // Import your shared supabase client
+import { supabase } from '../utils/supabase';
 
 interface AuthContextType {
   user: User | null;
