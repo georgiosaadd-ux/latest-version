@@ -516,9 +516,13 @@ const Card: React.FC<{
         <p className="text-gray-600 mb-4 text-sm leading-relaxed">
           {ebook.description}
         </p>
-        <div className="mb-3">
+<div className="mb-3">
           <button
-            onClick={() => onPreview(ebook)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onPreview(ebook);
+            }}
             className="flex items-center gap-2 font-medium text-sm transition-colors hover:underline"
             style={{ color: "hsl(333, 65%, 59%)" }}
           >

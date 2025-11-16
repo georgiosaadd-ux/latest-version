@@ -23,6 +23,7 @@ import FinalCTA from './components/FinalCTA';
 import Footer from './components/Footer';
 import Cart from './components/Cart';
 import CartToast from './components/CartToast';
+import StickyNav from './components/StickyNav';
 import CheckoutSuccess from './pages/CheckoutSuccess';
 import CheckoutCancel from './pages/CheckoutCancel';
 
@@ -125,81 +126,81 @@ function HomePage() {
 
     trackBeginCheckout(cart, total);
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
 
-    let customerData;
+      let customerData;
 
-    if (user) {
-      // User is logged in - use their account info
-      let profile = null;
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', user.id)
-          .single();
-        profile = data;
-      } catch (err) {
-        console.log('Profile not found or error:', err);
+      if (user) {
+        // User is logged in - use their account info
+        let profile = null;
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', user.id)
+            .single();
+          profile = data;
+        } catch (err) {
+          console.log('Profile not found or error:', err);
+        }
+
+        const firstName = profile?.first_name 
+          || user.user_metadata?.first_name 
+          || user.user_metadata?.full_name?.split(' ')[0] 
+          || user.email?.split('@')[0] 
+          || 'Customer';
+
+        const lastName = profile?.last_name 
+          || user.user_metadata?.last_name 
+          || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') 
+          || 'User';
+
+        customerData = {
+          firstName: firstName,
+          lastName: lastName,
+          email: user.email || '',
+          marketingConsent: false,
+          userId: user.id,
+        };
+      } else if (form) {
+        // Guest checkout - use form data
+        customerData = {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          marketingConsent: form.marketingConsent,
+        };
+      } else {
+        throw new Error('No customer data available');
       }
 
-      const firstName = profile?.first_name 
-        || user.user_metadata?.first_name 
-        || user.user_metadata?.full_name?.split(' ')[0] 
-        || user.email?.split('@')[0] 
-        || 'Customer';
-
-      const lastName = profile?.last_name 
-        || user.user_metadata?.last_name 
-        || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') 
-        || 'User';
-
-      customerData = {
-        firstName: firstName,
-        lastName: lastName,
-        email: user.email || '',
-        marketingConsent: false,
-        userId: user.id,
+      const checkoutRequest = {
+        items: cart,
+        customer: customerData,
+        successUrl: user 
+          ? `${window.location.origin}/portal/dashboard?payment=success`
+          : `${window.location.origin}/success`,
+        cancelUrl: `${window.location.origin}/cancel`,
       };
-    } else if (form) {
-      // Guest checkout - use form data
-      customerData = {
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        marketingConsent: form.marketingConsent,
-      };
-    } else {
-      throw new Error('No customer data available');
+
+      console.log('Creating checkout session with:', checkoutRequest);
+
+      const checkoutSession = await createCheckoutSession(checkoutRequest);
+
+      if (checkoutSession.url) {
+        window.location.href = checkoutSession.url;
+      } else {
+        throw new Error('No checkout URL received from server');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      alert(`Checkout failed: ${errorMessage}`);
+      throw error; // Re-throw so Cart component can handle it
     }
-
-    const checkoutRequest = {
-      items: cart,
-      customer: customerData,
-      successUrl: user 
-        ? `${window.location.origin}/portal/dashboard?payment=success`
-        : `${window.location.origin}/success`,
-      cancelUrl: `${window.location.origin}/cancel`,
-    };
-
-    console.log('Creating checkout session with:', checkoutRequest);
-
-    const checkoutSession = await createCheckoutSession(checkoutRequest);
-
-    if (checkoutSession.url) {
-      window.location.href = checkoutSession.url;
-    } else {
-      throw new Error('No checkout URL received from server');
-    }
-  } catch (error) {
-    console.error('Checkout error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    alert(`Checkout failed: ${errorMessage}`);
-    throw error; // Re-throw so Cart component can handle it
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -238,6 +239,8 @@ function HomePage() {
           </div>
         </div>
       </header>
+
+      <StickyNav />
 
       <div className="pt-20">
         <Hero

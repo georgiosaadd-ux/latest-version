@@ -13,51 +13,57 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ ebook, onClose, onAddToCart
   const modalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    // Store the element that triggered the modal for focus return
-    triggerRef.current = document.activeElement as HTMLElement;
+useEffect(() => {
+  // Store the element that triggered the modal for focus return
+  triggerRef.current = document.activeElement as HTMLElement;
 
-    // Lock body scroll and hide bottom nav
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = `-${window.scrollY}px`;
-    
-    // Hide bottom nav on mobile
+  // Store current scroll position
+  const scrollY = window.scrollY;
+  
+  // Simpler approach: just prevent scrolling without position fixed
+  const originalOverflow = document.body.style.overflow;
+  const originalPaddingRight = document.body.style.paddingRight;
+  
+  // Get scrollbar width to prevent layout shift
+  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+  
+  // Lock scroll
+  document.body.style.overflow = 'hidden';
+  document.body.style.paddingRight = `${scrollbarWidth}px`;
+  
+  // Hide bottom nav on mobile
+  const bottomNav = document.querySelector('[class*="bottom-0"]');
+  if (bottomNav) {
+    (bottomNav as HTMLElement).style.display = 'none';
+  }
+
+  // Focus on modal (with preventScroll)
+  setTimeout(() => {
+    if (modalRef.current) {
+      modalRef.current.focus({ preventScroll: true });
+    }
+  }, 10);
+
+  return () => {
+    // Restore overflow
+    document.body.style.overflow = originalOverflow;
+    document.body.style.paddingRight = originalPaddingRight;
+
+    // Show bottom nav
     const bottomNav = document.querySelector('[class*="bottom-0"]');
     if (bottomNav) {
-      (bottomNav as HTMLElement).style.display = 'none';
+      (bottomNav as HTMLElement).style.display = '';
     }
 
-    // Focus on modal
-    if (modalRef.current) {
-      modalRef.current.focus();
+    // Return focus (with preventScroll)
+    if (triggerRef.current) {
+      triggerRef.current.focus({ preventScroll: true });
     }
-
-    return () => {
-      // Restore body scroll
-      const scrollY = document.body.style.top;
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
-
-      // Show bottom nav
-      const bottomNav = document.querySelector('[class*="bottom-0"]');
-      if (bottomNav) {
-        (bottomNav as HTMLElement).style.display = '';
-      }
-
-      // Return focus to trigger element
-      if (triggerRef.current) {
-        triggerRef.current.focus();
-      }
-    };
-  }, []);
+    
+    // Ensure scroll position is maintained
+    window.scrollTo(0, scrollY);
+  };
+}, []);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
