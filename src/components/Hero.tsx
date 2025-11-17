@@ -12,7 +12,7 @@ import {
 interface HeroProps {
   onBrowseClick: () => void;
   onBundlesClick: () => void;
-  onReviewsClick: () => void; // NEW: scroll to reviews/testimonials
+  onReviewsClick: () => void;
 }
 
 const Hero: React.FC<HeroProps> = ({
@@ -26,10 +26,6 @@ const Hero: React.FC<HeroProps> = ({
       <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50">
         <div className="absolute inset-0 bg-gradient-to-r from-[hsl(333,65%,59%)]/10 via-[hsl(335,77%,80%)]/10 to-pink-500/10" />
       </div>
-
-      {/* Floating elements */}
-      <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-br from-[hsl(333,65%,85%)] to-[hsl(335,77%,90%)] rounded-full opacity-20 animate-pulse" />
-      <div className="absolute bottom-20 right-10 w-32 h-32 bg-gradient-to-br from-[hsl(333,65%,85%)] to-[hsl(335,77%,90%)] rounded-full opacity-20 animate-pulse delay-1000" />
 
       <div className="container mx-auto px-4 text-center relative z-10 pt-20 pb-10">
         <div className="max-w-1xl mx-auto">
@@ -94,16 +90,20 @@ const Hero: React.FC<HeroProps> = ({
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <button
               onClick={onBrowseClick}
-              className="bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
+              className="group relative bg-gradient-to-r from-[hsl(333,65%,59%)] to-[hsl(335,77%,80%)] text-white px-8 py-4 rounded-full text-lg font-semibold hover:from-pink-500 hover:to-pink-600 hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 overflow-hidden"
             >
-              Browse eBooks
-              <ArrowDown size={20} />
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              <span className="relative z-10">Browse eBooks</span>
+              <ArrowDown size={20} className="relative z-10" />
             </button>
             <button
               onClick={onBundlesClick}
-              className="border-2 border-purple-300 text-purple-800 px-8 py-4 rounded-full text-lg font-semibold hover:border-purple-500 hover:text-purple-600 transition-all transform hover:-translate-y-1"
+              className="group relative border-2 border-purple-300 text-purple-800 px-8 py-4 rounded-full text-lg font-semibold hover:border-purple-500 hover:bg-purple-50 hover:text-purple-900 hover:shadow-lg transition-all transform hover:-translate-y-1 overflow-hidden"
             >
-              See Bundles & Save
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-200/40 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              <span className="relative z-10">See Bundles & Save</span>
             </button>
           </div>
 

@@ -1,7 +1,7 @@
 // File: Cart.tsx
 
 import React, { useState, useEffect } from 'react';
-import { X, ShoppingBag, Trash2, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ShoppingBag, Trash2, CreditCard, ChevronDown, ChevronUp, Shield, Download, Lock } from 'lucide-react';
 import { CartItem, CheckoutForm, EBook, Bundle } from '../types';
 import { formatCurrency } from '../utils/currency';
 import BundleUpsellModal from './BundleUpsellModal';
@@ -607,10 +607,20 @@ const handleContinueWithoutBundle = async () => {
                    </button>
                  </div>
 
-                 <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500">
-                   <span>🔒 Secure checkout</span>
-                   <span>📧 Instant download</span>
-                   <span>🛡️ Privacy protected</span>
+                 {/* Updated Security Badges with Pink Theme */}
+                 <div className="flex items-center justify-center gap-4 mt-4 text-xs">
+                   <div className="flex items-center gap-1.5 text-pink-600 bg-pink-50 px-3 py-1.5 rounded-full">
+                     <Lock size={14} />
+                     <span className="font-medium">Secure checkout</span>
+                   </div>
+                   <div className="flex items-center gap-1.5 text-pink-600 bg-pink-50 px-3 py-1.5 rounded-full">
+                     <Download size={14} />
+                     <span className="font-medium">Instant download</span>
+                   </div>
+                   <div className="flex items-center gap-1.5 text-pink-600 bg-pink-50 px-3 py-1.5 rounded-full">
+                     <Shield size={14} />
+                     <span className="font-medium">Privacy protected</span>
+                   </div>
                  </div>
                </div>
              </>
